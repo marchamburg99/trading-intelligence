@@ -5,11 +5,23 @@ import type { Paper } from "@/types";
 
 export function Papers() {
   const [search, setSearch] = useState("");
-  const { data: papers, loading } = useFetch<Paper[]>(
+  const { data: papers, loading, refetch } = useFetch<Paper[]>(
     () => api.papers.list(search ? `search=${search}` : "") as Promise<Paper[]>,
     [search]
   );
   const [expanded, setExpanded] = useState<number | null>(null);
+  const [summarizing, setSummarizing] = useState(false);
+
+  const handleSummarize = async () => {
+    setSummarizing(true);
+    try {
+      await api.papers.summarize();
+      refetch();
+    } catch {
+      alert("Fehler beim Generieren der Zusammenfassungen");
+    }
+    setSummarizing(false);
+  };
 
   return (
     <div className="space-y-6">
@@ -18,13 +30,22 @@ export function Papers() {
         <p className="text-ink-tertiary mt-1">KI-zusammengefasste Quantitative Finance Papers</p>
       </div>
 
-      <input
-        type="text"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder="Suche nach Titel, Tag..."
-        className="input w-full"
-      />
+      <div className="flex gap-3">
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Suche nach Titel, Tag..."
+          className="input flex-1"
+        />
+        <button
+          onClick={handleSummarize}
+          disabled={summarizing}
+          className="btn-primary text-sm whitespace-nowrap"
+        >
+          {summarizing ? "Wird generiert..." : "KI-Zusammenfassungen generieren"}
+        </button>
+      </div>
 
       {loading ? (
         <p className="text-ink-tertiary">Lade...</p>
@@ -56,12 +77,19 @@ export function Papers() {
               )}
               {expanded === p.id && (
                 <div className="mt-4 pt-4 border-t border-border space-y-3">
-                  {p.ai_summary && (
+                  {p.ai_summary ? (
                     <div>
                       <h4 className="text-sm font-medium text-ink-tertiary">KI-Zusammenfassung</h4>
                       <p className="text-sm mt-1 whitespace-pre-line">{p.ai_summary}</p>
                     </div>
-                  )}
+                  ) : p.abstract ? (
+                    <div>
+                      <h4 className="text-sm font-medium text-ink-tertiary">Abstract</h4>
+                      <p className="text-sm mt-1 text-ink-secondary">
+                        {p.abstract.length > 200 ? `${p.abstract.slice(0, 200)}...` : p.abstract}
+                      </p>
+                    </div>
+                  ) : null}
                   {p.trading_implication && (
                     <div>
                       <h4 className="text-sm font-medium text-ink-tertiary">Trading-Implikation</h4>

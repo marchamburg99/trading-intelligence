@@ -69,6 +69,7 @@ export const api = {
   papers: {
     list: (params?: string) => fetchJSON(`/papers/${params ? `?${params}` : ""}`),
     detail: (id: number) => fetchJSON(`/papers/${id}`),
+    summarize: () => postJSON<{ status: string; remaining_unsummarized: number }>("/papers/summarize", {}),
   },
   sentiment: {
     forSymbol: (symbol: string) => fetchJSON(`/sentiment/${symbol}`),

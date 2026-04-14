@@ -35,6 +35,7 @@ def get_papers(
             "source": p.source,
             "url": p.url,
             "published_date": p.published_date.isoformat() if p.published_date else None,
+            "abstract": p.abstract,
             "ai_summary": p.ai_summary,
             "trading_implication": p.trading_implication,
             "relevance_score": p.relevance_score,
@@ -42,6 +43,14 @@ def get_papers(
         }
         for p in papers
     ]
+
+
+@router.post("/summarize")
+def trigger_summarize(db: Session = Depends(get_db)):
+    from papers.aggregator import process_unsummarized_papers
+    process_unsummarized_papers(db, limit=5)
+    unsummarized = db.query(Paper).filter(Paper.ai_summary.is_(None)).count()
+    return {"status": "ok", "remaining_unsummarized": unsummarized}
 
 
 @router.get("/{paper_id}")

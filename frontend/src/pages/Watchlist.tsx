@@ -80,15 +80,15 @@ export function WatchlistPage() {
             <thead>
               <tr className="text-[10px] uppercase tracking-wider text-ink-tertiary border-b border-border bg-surface-muted/50">
                 <th className="py-3 px-4 text-left">Symbol</th>
-                <th className="py-3 px-2 text-left">Sektor</th>
+                <th className="py-3 px-2 text-left hidden md:table-cell">Sektor</th>
                 <th className="py-3 px-2 text-right">Kurs</th>
                 <th className="py-3 px-2 text-right">1d</th>
                 <th className="py-3 px-2 text-right">RSI</th>
-                <th className="py-3 px-2 text-center">MACD</th>
-                <th className="py-3 px-2 text-center">&gt;EMA200</th>
-                <th className="py-3 px-2 text-right">ATR</th>
+                <th className="py-3 px-2 text-center hidden md:table-cell">MACD</th>
+                <th className="py-3 px-2 text-center hidden md:table-cell">&gt;EMA200</th>
+                <th className="py-3 px-2 text-right hidden md:table-cell">ATR</th>
                 <th className="py-3 px-2 text-center">Signal</th>
-                <th className="py-3 px-2 text-right">Konf.</th>
+                <th className="py-3 px-2 text-right hidden md:table-cell">Konf.</th>
                 <th className="py-3 px-2 text-center"></th>
               </tr>
             </thead>
@@ -99,29 +99,29 @@ export function WatchlistPage() {
                     <a href={`https://finance.yahoo.com/quote/${item.symbol}`} target="_blank" rel="noopener noreferrer" className="font-bold hover:text-accent transition-colors">{item.symbol}</a>
                     {item.name && <span className="text-ink-tertiary text-xs ml-1.5 hidden lg:inline">{item.name}</span>}
                   </td>
-                  <td className="py-2.5 px-2 text-ink-tertiary text-xs">{item.sector || "—"}</td>
+                  <td className="py-2.5 px-2 text-ink-tertiary text-xs hidden md:table-cell">{item.sector || "—"}</td>
                   <td className="py-2.5 px-2 text-right font-mono font-semibold">
                     {item.price ? `€${item.price.toFixed(2)}` : "—"}
                   </td>
                   <td className="py-2.5 px-2 text-right"><Chg value={item.change_1d} /></td>
                   <td className="py-2.5 px-2 text-right"><RsiCell value={item.rsi} /></td>
-                  <td className="py-2.5 px-2 text-center">
+                  <td className="py-2.5 px-2 text-center hidden md:table-cell">
                     {item.macd_bullish === null ? "—" : item.macd_bullish
                       ? <span className="text-gain text-xs">BULL</span>
                       : <span className="text-loss text-xs">BEAR</span>}
                   </td>
-                  <td className="py-2.5 px-2 text-center">
+                  <td className="py-2.5 px-2 text-center hidden md:table-cell">
                     {item.above_ema200 === null ? "—" : item.above_ema200
                       ? <span className="text-gain">✓</span>
                       : <span className="text-loss">✗</span>}
                   </td>
-                  <td className="py-2.5 px-2 text-right font-mono text-xs text-ink-tertiary">
+                  <td className="py-2.5 px-2 text-right font-mono text-xs text-ink-tertiary hidden md:table-cell">
                     {item.atr ? `€${item.atr}` : "—"}
                   </td>
                   <td className="py-2.5 px-2 text-center">
                     {item.signal_type ? <SignalBadge type={item.signal_type} /> : <span className="text-ink-faint text-xs">—</span>}
                   </td>
-                  <td className="py-2.5 px-2 text-right">
+                  <td className="py-2.5 px-2 text-right hidden md:table-cell">
                     {item.confidence ? (
                       <span className={`font-bold text-sm ${
                         item.confidence >= 65 ? "text-gain" :

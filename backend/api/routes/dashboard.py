@@ -339,6 +339,19 @@ def trading_desk(db: Session = Depends(get_db)):
     if weakest_sector:
         briefing_points.append(f"Schwächster Sektor: {weakest_sector['name']} ({weakest_sector['change_20d']:+.1f}% 20d)")
 
+    # Klumpenrisiko-Warnung
+    if open_trades:
+        sector_counts = {}
+        for trade in open_trades:
+            t = db.query(Ticker).filter(Ticker.symbol == trade.symbol).first()
+            sector = t.sector if t and t.sector else "Unknown"
+            sector_counts[sector] = sector_counts.get(sector, 0) + 1
+        total_open = len(open_trades)
+        for sector, count in sector_counts.items():
+            pct = count / total_open * 100
+            if pct > 50:
+                briefing_points.append(f"⚠️ Klumpenrisiko: {pct:.0f}% deiner Positionen sind {sector}")
+
     # Leveraged Briefing
     if lev_buys:
         briefing_points.append(f"⚡ {len(lev_buys)} Hebel-Signal(e) aktiv — HOHES RISIKO, max. 1% pro Trade")

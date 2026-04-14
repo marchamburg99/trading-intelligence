@@ -49,8 +49,9 @@ export interface Paper {
   source: string;
   url: string;
   published_date: string;
-  ai_summary: string;
-  trading_implication: string;
+  abstract?: string;
+  ai_summary: string | null;
+  trading_implication: string | null;
   relevance_score: number;
   tags: string[];
 }
