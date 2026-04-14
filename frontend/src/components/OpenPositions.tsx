@@ -10,6 +10,48 @@ function Pnl({ value, suffix = "" }: { value: number; suffix?: string }) {
   return <span className={`font-mono font-semibold ${c}`}>{value > 0 ? "+" : ""}{value.toFixed(2)}{suffix}</span>;
 }
 
+function CloseButton({ position }: { position: Position }) {
+  const [closing, setClosing] = useState(false);
+
+  const handleClose = async () => {
+    setClosing(true);
+    try {
+      const quoteRes = await fetch(`/api/quotes/${position.symbol}`);
+      const quote = await quoteRes.json();
+      const currentPrice = quote.price ?? position.current_price;
+
+      const input = prompt(
+        `Position schließen?\n\n${position.symbol} ${position.direction}\n${position.position_size} Stk. @ Einstieg €${position.entry_price.toFixed(2)}\n\nAusstiegskurs:`,
+        currentPrice?.toFixed(2) ?? "",
+      );
+      if (!input) { setClosing(false); return; }
+
+      const exitPrice = parseFloat(input);
+      if (isNaN(exitPrice) || exitPrice <= 0) { setClosing(false); return; }
+
+      await fetch(`/api/journal/${position.id}/close`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ exit_price: exitPrice }),
+      });
+      window.location.reload();
+    } catch {
+      alert("Fehler beim Schließen der Position.");
+      setClosing(false);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleClose}
+      disabled={closing}
+      className="text-[10px] bg-loss-bg text-loss hover:bg-loss hover:text-white px-2 py-1 rounded-lg font-semibold transition-all disabled:opacity-50"
+    >
+      {closing ? "..." : "Schließen"}
+    </button>
+  );
+}
+
 export function OpenPositions({
   positions, unrealized_total, realized_total, win_rate,
 }: {

@@ -78,8 +78,15 @@ function TradeCard({ s, type }: { s: SignalItem; type: "buy" | "sell" | "watch" 
       direction: type === "sell" ? "SHORT" : "LONG",
       entry_price: execPrice, position_size: execShares, stop_loss: execSL, take_profit: execTP,
       setup_type: `Signal ${s.confidence.toFixed(0)}%`,
-      notes: `${s.reasoning}\n\nAusgeführt: ${now.toLocaleString("de-DE")} @ €${execPrice}`,
-    }).then(() => { setShowExec(false); setSubmitting(false); window.location.reload(); });
+      notes: `${s.reasoning}\n\nGeloggt: ${now.toLocaleString("de-DE")} @ ${s.currency_symbol || "€"}${execPrice}`,
+    }).then(() => {
+      setShowExec(false);
+      setSubmitting(false);
+      if (confirm(`✅ Trade im Journal geloggt!\n\n${execShares}x ${s.symbol} @ ${s.currency_symbol || "€"}${execPrice}\nSL: ${s.currency_symbol || "€"}${execSL} | TP: ${s.currency_symbol || "€"}${execTP}\n\nJetzt bei deinem Broker ausführen?\n→ OK öffnet Yahoo Finance für ${s.symbol}`)) {
+        window.open(`https://finance.yahoo.com/quote/${s.symbol}`, "_blank");
+      }
+      window.location.reload();
+    });
   };
 
   return (
@@ -161,7 +168,7 @@ function TradeCard({ s, type }: { s: SignalItem; type: "buy" | "sell" | "watch" 
               type === "buy" ? "bg-gain text-white hover:bg-gain/90" :
               type === "sell" ? "bg-loss text-white hover:bg-loss/90" :
               "bg-accent text-white hover:bg-accent-hover"
-            }`}>{type === "sell" ? "SHORT ausführen" : "Trade ausführen"}</button>
+            }`}>{type === "sell" ? "SHORT ins Journal" : "Trade ins Journal"}</button>
         </div>
       )}
     </div>
@@ -169,7 +176,7 @@ function TradeCard({ s, type }: { s: SignalItem; type: "buy" | "sell" | "watch" 
 }
 
 export function Dashboard() {
-  const { data, loading, refetch } = useFetch<DashboardData>(
+  const { data, loading, error, refetch } = useFetch<DashboardData>(
     () => api.dashboard.overview() as Promise<DashboardData>, [], 60000,
   );
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
@@ -198,6 +205,18 @@ export function Dashboard() {
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-accent/30 border-t-accent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-ink-tertiary">Lade Trading Desk...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="card border-loss/20 bg-loss-bg/30 text-center max-w-md">
+          <p className="text-loss font-semibold mb-2">Verbindung fehlgeschlagen</p>
+          <p className="text-sm text-ink-secondary mb-4">Backend nicht erreichbar. Läuft Docker?</p>
+          <button onClick={() => window.location.reload()} className="btn-primary">Erneut versuchen</button>
         </div>
       </div>
     );
@@ -346,8 +365,13 @@ export function Dashboard() {
                         {p && p.leverage > 1 && <> · Exposure <span className="text-leverage font-semibold">€{(s.effective_exposure || 0).toLocaleString()}</span></>}
                       </div>
                       <button onClick={() => {
-                        api.journal.create({ symbol: s.symbol, trade_date: new Date().toISOString().split("T")[0], direction: p?.direction === "SHORT" ? "SHORT" : "LONG", entry_price: s.entry_price, position_size: s.position_size, stop_loss: s.stop_loss, take_profit: s.take_profit, setup_type: `Hebel ${p?.leverage}x · ${s.confidence.toFixed(0)}%`, notes: s.reasoning }).then(() => { window.location.reload(); });
-                      }} className="bg-leverage text-white hover:bg-leverage/90 font-semibold text-xs px-3 py-1.5 rounded-xl transition-all active:scale-[0.98]">Trade ausführen</button>
+                        api.journal.create({ symbol: s.symbol, trade_date: new Date().toISOString().split("T")[0], direction: p?.direction === "SHORT" ? "SHORT" : "LONG", entry_price: s.entry_price, position_size: s.position_size, stop_loss: s.stop_loss, take_profit: s.take_profit, setup_type: `Hebel ${p?.leverage}x · ${s.confidence.toFixed(0)}%`, notes: s.reasoning }).then(() => {
+                          if (confirm(`✅ Trade im Journal geloggt!\n\n${s.position_size}x ${s.symbol} @ ${s.currency_symbol || "€"}${s.entry_price}\n\nJetzt bei deinem Broker ausführen?\n→ OK öffnet Yahoo Finance für ${s.symbol}`)) {
+                            window.open(`https://finance.yahoo.com/quote/${s.symbol}`, "_blank");
+                          }
+                          window.location.reload();
+                        });
+                      }} className="bg-leverage text-white hover:bg-leverage/90 font-semibold text-xs px-3 py-1.5 rounded-xl transition-all active:scale-[0.98]">Ins Journal eintragen</button>
                     </div>
                   </div>
                 </div>

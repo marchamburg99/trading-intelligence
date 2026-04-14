@@ -172,7 +172,7 @@ def trading_desk(db: Session = Depends(get_db)):
     product_signals = [s for s in all_signals if s.ticker.symbol in special_symbols]
 
     buy_signals = [s for s in normal_signals if s.signal_type == SignalType.BUY]
-    strong_holds = [s for s in normal_signals if s.signal_type == SignalType.HOLD and s.confidence >= 58][:10]
+    strong_holds = [s for s in normal_signals if s.signal_type == SignalType.HOLD and s.confidence >= 63][:5]
     sell_signals = [s for s in normal_signals if s.signal_type == SignalType.SELL]
 
     # Leveraged Products — eigene Kategorien
@@ -221,9 +221,9 @@ def trading_desk(db: Session = Depends(get_db)):
         sl = float(trade.stop_loss) if trade.stop_loss else None
         tp = float(trade.take_profit) if trade.take_profit else None
         alert = None
-        if current_price and sl and current_price <= sl * 1.02 and trade.direction == "LONG":
+        if current_price and sl and current_price <= sl * 1.05 and trade.direction == "LONG":
             alert = "STOP_LOSS_NEAR"
-        elif current_price and tp and current_price >= tp * 0.98 and trade.direction == "LONG":
+        elif current_price and tp and current_price >= tp * 0.95 and trade.direction == "LONG":
             alert = "TAKE_PROFIT_NEAR"
 
         positions.append({
