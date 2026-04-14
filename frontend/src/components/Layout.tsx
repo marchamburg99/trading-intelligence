@@ -8,6 +8,7 @@ import {
   Star,
   BookOpen,
   Shield,
+  Sparkles,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -19,6 +20,7 @@ const NAV_ITEMS = [
   { to: "/watchlist", label: "Watchlist", icon: Star },
   { to: "/journal", label: "Journal", icon: BookOpen },
   { to: "/risk", label: "Risiko", icon: Shield },
+  { to: "/ai", label: "KI-Analyse", icon: Sparkles },
 ];
 
 export function Layout() {

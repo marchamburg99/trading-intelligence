@@ -12,6 +12,7 @@ import { Macro } from "./pages/Macro";
 import { WatchlistPage } from "./pages/Watchlist";
 import { Journal } from "./pages/Journal";
 import { Risk } from "./pages/Risk";
+import { AIAnalysis } from "./pages/AIAnalysis";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
@@ -27,6 +28,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           <Route path="/watchlist" element={<WatchlistPage />} />
           <Route path="/journal" element={<Journal />} />
           <Route path="/risk" element={<Risk />} />
+          <Route path="/ai" element={<AIAnalysis />} />
         </Route>
       </Routes>
     </BrowserRouter>

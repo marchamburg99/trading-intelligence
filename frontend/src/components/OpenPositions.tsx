@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 interface Position {
   id: number; symbol: string; direction: string; entry_price: number;
   current_price: number | null; stop_loss: number | null; take_profit: number | null;
@@ -91,6 +93,7 @@ export function OpenPositions({
             <th className="pb-2 text-right">%</th>
             <th className="pb-2 text-right">Tage</th>
             <th className="pb-2 text-center">Status</th>
+            <th className="pb-2 text-center">Aktion</th>
           </tr>
         </thead>
         <tbody>
@@ -111,6 +114,7 @@ export function OpenPositions({
                 {p.alert === "TAKE_PROFIT_NEAR" && <span className="text-[10px] bg-gain-bg text-gain px-2 py-0.5 rounded-lg font-semibold">TP NAHE</span>}
                 {!p.alert && <span className="text-[10px] text-ink-faint">OK</span>}
               </td>
+              <td className="py-2.5 text-center"><CloseButton position={p} /></td>
             </tr>
           ))}
         </tbody>
