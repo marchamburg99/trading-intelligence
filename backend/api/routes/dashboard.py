@@ -57,6 +57,8 @@ router = APIRouter()
 
 
 def _serialize_signal(s, capital=100000.0):
+    from aggregator.currency import get_ticker_currency, convert_to_eur, get_currency_symbol
+
     entry = float(s.entry_price) if s.entry_price else 0
     sl = float(s.stop_loss) if s.stop_loss else 0
     tp = float(s.take_profit) if s.take_profit else 0
@@ -67,7 +69,6 @@ def _serialize_signal(s, capital=100000.0):
     product_info = _get_product_info(symbol)
     is_lev = _is_leveraged(symbol)
 
-    # Bei Hebelprodukten: max 1% Risiko statt 2%
     risk_pct = 0.01 if is_lev else 0.02
     if risk_per_share > 0:
         adjusted_size = int((capital * risk_pct) / risk_per_share)
@@ -77,15 +78,27 @@ def _serialize_signal(s, capital=100000.0):
     leverage = product_info["leverage"] if product_info else 1
     effective_exposure = round(entry * adjusted_size * leverage, 2)
 
+    # Währung + EUR-Umrechnung
+    ccy = get_ticker_currency(symbol)
+    ccy_symbol = get_currency_symbol(ccy)
+    entry_eur = convert_to_eur(entry, ccy) if ccy != "EUR" else None
+    sl_eur = convert_to_eur(sl, ccy) if ccy != "EUR" and sl else None
+    tp_eur = convert_to_eur(tp, ccy) if ccy != "EUR" and tp else None
+
     result = {
         "symbol": symbol,
         "name": s.ticker.name,
         "sector": s.ticker.sector,
         "signal_type": s.signal_type.value,
         "confidence": s.confidence,
+        "currency": ccy,
+        "currency_symbol": ccy_symbol,
         "entry_price": round(entry, 2),
         "stop_loss": round(sl, 2),
         "take_profit": round(tp, 2),
+        "entry_eur": entry_eur,
+        "sl_eur": sl_eur,
+        "tp_eur": tp_eur,
         "risk_per_share": round(risk_per_share, 2),
         "reward_per_share": round(reward_per_share, 2),
         "risk_reward_ratio": s.risk_reward_ratio,
@@ -260,7 +273,14 @@ def trading_desk(db: Session = Depends(get_db)):
             source = "eod"
 
         d20 = round(((cur - float(prices[-1].close)) / float(prices[-1].close)) * 100, 2) if len(prices) >= 20 else d1
-        indices.append({"symbol": sym, "name": name, "price": round(cur, 2), "change_1d": d1, "change_20d": d20, "source": source})
+        from aggregator.currency import get_ticker_currency, convert_to_eur, get_currency_symbol
+        ccy = get_ticker_currency(sym)
+        indices.append({
+            "symbol": sym, "name": name, "price": round(cur, 2),
+            "change_1d": d1, "change_20d": d20, "source": source,
+            "currency": ccy, "currency_symbol": get_currency_symbol(ccy),
+            "price_eur": convert_to_eur(cur, ccy) if ccy != "EUR" else None,
+        })
 
     # === SEKTOR-ROTATION ===
     sector_etfs = {"XLK": "Tech", "XLF": "Finanz", "XLV": "Health", "XLE": "Energie", "XLI": "Industrie", "XLP": "Konsum S.", "XLY": "Konsum D.", "XLU": "Versorger", "XLC": "Komm.", "XLRE": "Immob.", "XLB": "Material"}

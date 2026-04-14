@@ -16,8 +16,8 @@ redis==5.2.1
 
 # Data & Finance
 yfinance==0.2.51
-pandas==2.2.3
-numpy==2.2.6
+pandas>=2.2.3
+numpy>=2.2.6
 pandas-ta==0.4.71b0
 
 # AI

@@ -5,6 +5,7 @@ import { SignalBadge } from "@/components/SignalBadge";
 import { ConfidenceBar } from "@/components/ConfidenceBar";
 import { OpenPositions } from "@/components/OpenPositions";
 import { MarketOverview } from "@/components/MarketOverview";
+import { Price } from "@/components/Price";
 import type { SignalType } from "@/types";
 
 interface SignalItem {
@@ -14,6 +15,8 @@ interface SignalItem {
   position_size: number; position_value: number; max_loss: number; max_gain: number;
   risk_rating: number; expected_hold_days: number; reasoning: string;
   ta_score: number; fundamental_score: number; sentiment_score: number; macro_score: number;
+  currency?: string; currency_symbol?: string;
+  entry_eur?: number | null; sl_eur?: number | null; tp_eur?: number | null;
 }
 
 interface Position {
@@ -97,24 +100,22 @@ function TradeCard({ s, type }: { s: SignalItem; type: "buy" | "sell" | "watch" 
         <div className="grid grid-cols-3 gap-4 text-center">
           <div>
             <div className="text-[10px] uppercase tracking-wider text-ink-tertiary">Einstieg</div>
-            <div className="text-lg font-mono font-bold text-ink">€{s.entry_price}</div>
+            <div className="text-lg font-bold"><Price value={s.entry_price} currency={s.currency} currencySymbol={s.currency_symbol} eurValue={s.entry_eur} /></div>
           </div>
           <div>
             <div className="text-[10px] uppercase tracking-wider text-loss">Stop-Loss</div>
-            <div className="text-lg font-mono font-bold text-loss">€{s.stop_loss}</div>
-            <div className="text-[10px] text-loss/60">-€{s.risk_per_share}/Aktie</div>
+            <div className="text-lg font-bold text-loss"><Price value={s.stop_loss} currency={s.currency} currencySymbol={s.currency_symbol} eurValue={s.sl_eur} className="text-loss" /></div>
           </div>
           <div>
             <div className="text-[10px] uppercase tracking-wider text-gain">Take-Profit</div>
-            <div className="text-lg font-mono font-bold text-gain">€{s.take_profit}</div>
-            <div className="text-[10px] text-gain/60">+€{s.reward_per_share}/Aktie</div>
+            <div className="text-lg font-bold text-gain"><Price value={s.take_profit} currency={s.currency} currencySymbol={s.currency_symbol} eurValue={s.tp_eur} className="text-gain" /></div>
           </div>
         </div>
         <div className="border-t border-border/50 mt-3 pt-3 grid grid-cols-4 gap-3 text-center text-sm">
           <div><div className="text-[10px] text-ink-tertiary">Stück</div><div className="font-semibold text-ink">{s.position_size}</div></div>
-          <div><div className="text-[10px] text-ink-tertiary">Volumen</div><div className="font-semibold text-ink">€{s.position_value.toLocaleString()}</div></div>
-          <div><div className="text-[10px] text-ink-tertiary">Max. Verlust</div><div className="font-semibold text-loss">-€{s.max_loss.toLocaleString()}</div></div>
-          <div><div className="text-[10px] text-ink-tertiary">Max. Gewinn</div><div className="font-semibold text-gain">+€{s.max_gain.toLocaleString()}</div></div>
+          <div><div className="text-[10px] text-ink-tertiary">Volumen</div><div className="font-semibold text-ink"><Price value={s.position_value} currency={s.currency} currencySymbol={s.currency_symbol} /></div></div>
+          <div><div className="text-[10px] text-ink-tertiary">Max. Verlust</div><div className="font-semibold text-loss">-<Price value={s.max_loss} currency={s.currency} currencySymbol={s.currency_symbol} className="text-loss" /></div></div>
+          <div><div className="text-[10px] text-ink-tertiary">Max. Gewinn</div><div className="font-semibold text-gain">+<Price value={s.max_gain} currency={s.currency} currencySymbol={s.currency_symbol} className="text-gain" /></div></div>
         </div>
       </div>
 
