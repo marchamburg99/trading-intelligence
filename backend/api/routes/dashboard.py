@@ -332,6 +332,18 @@ def trading_desk(db: Session = Depends(get_db)):
     if not briefing_points:
         briefing_points.append("Keine besonderen Ereignisse. Watchlist beobachten.")
 
+    # Wirtschaftskalender-Warnungen
+    from api.routes.macro import get_economic_calendar
+    try:
+        calendar = get_economic_calendar()
+        upcoming = [e for e in calendar if (date.fromisoformat(e["date"]) - date.today()).days <= 3 and e["importance"] == "HIGH"]
+        for e in upcoming:
+            days = (date.fromisoformat(e["date"]) - date.today()).days
+            label = "MORGEN" if days == 1 else f"in {days} Tagen" if days > 0 else "HEUTE"
+            briefing_points.append(f"📅 {e['event']} {label} — {e['impact']}")
+    except Exception:
+        pass
+
     strongest_sector = sectors[0] if sectors else None
     weakest_sector = sectors[-1] if sectors else None
     if strongest_sector:

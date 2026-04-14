@@ -163,7 +163,10 @@ function TradeCard({ s, type }: { s: SignalItem; type: "buy" | "sell" | "watch" 
             <span>Sent:{s.sentiment_score.toFixed(0)}</span><span>Makro:{s.macro_score.toFixed(0)}</span>
             <span>R:R 1:{s.risk_reward_ratio.toFixed(1)}</span><span>{s.expected_hold_days}d</span>
           </div>
-          <a href={`/risk?entry_price=${s.entry_price}&stop_loss=${s.stop_loss}&take_profit=${s.take_profit}`} className="text-[10px] text-ink-tertiary hover:text-accent">Risiko berechnen</a>
+          <div className="flex gap-3">
+            <a href={`/watchlist?symbol=${s.symbol}`} className="text-[10px] text-ink-tertiary hover:text-accent">Chart</a>
+            <a href={`/risk?entry_price=${s.entry_price}&stop_loss=${s.stop_loss}&take_profit=${s.take_profit}`} className="text-[10px] text-ink-tertiary hover:text-accent">Risiko berechnen</a>
+          </div>
           <button onClick={handleOpenExec}
             className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all active:scale-[0.98] ${
               type === "buy" ? "bg-gain text-white hover:bg-gain/90" :
@@ -183,6 +186,35 @@ export function Dashboard() {
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [refreshing, setRefreshing] = useState(false);
   const [, setTick] = useState(0);
+
+  // Browser-Notifications für SL/TP Alerts
+  useEffect(() => {
+    if (!data?.positions?.open) return;
+    const alerts = data.positions.open.filter(p => p.alert);
+    if (alerts.length === 0) return;
+
+    if (Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+
+    if (Notification.permission === "granted") {
+      alerts.forEach(p => {
+        const tag = `alert-${p.symbol}-${p.alert}`;
+        if (p.alert === "STOP_LOSS_NEAR") {
+          new Notification(`⚠️ ${p.symbol} nahe Stop-Loss!`, {
+            body: `Aktuell: €${p.current_price?.toFixed(2)} | SL: €${p.stop_loss?.toFixed(2)}`,
+            tag,
+            requireInteraction: true,
+          });
+        } else if (p.alert === "TAKE_PROFIT_NEAR") {
+          new Notification(`✅ ${p.symbol} nahe Take-Profit!`, {
+            body: `Aktuell: €${p.current_price?.toFixed(2)} | TP: €${p.take_profit?.toFixed(2)}`,
+            tag,
+          });
+        }
+      });
+    }
+  }, [data?.positions?.open]);
 
   // Timer tickt jede 10s damit "vor Xs" live zählt
   useEffect(() => {
@@ -242,6 +274,11 @@ export function Dashboard() {
           <span className="text-[11px] text-ink-faint">
             Aktualisiert {timeLabel} · Auto-Refresh 60s · Kurse via yfinance/Alpha Vantage
           </span>
+          {typeof Notification !== "undefined" && Notification.permission !== "granted" && (
+            <button onClick={() => Notification.requestPermission()} className="text-[10px] text-warn hover:text-warn/80">
+              Benachrichtigungen aktivieren
+            </button>
+          )}
         </div>
         <button
           onClick={handleRefresh}

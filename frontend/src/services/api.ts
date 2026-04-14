@@ -60,6 +60,7 @@ export const api = {
     overview: () => fetchJSON("/macro/"),
     history: (indicator: string) => fetchJSON(`/macro/history/${indicator}`),
     ampel: () => fetchJSON("/macro/ampel"),
+    calendar: () => fetchJSON("/macro/calendar"),
   },
   hedgefunds: {
     filings: () => fetchJSON("/hedgefunds/filings"),
@@ -86,6 +87,7 @@ export const api = {
     close: (id: number, data: { exit_price: number; lessons?: string }) => postJSON(`/journal/${id}/close`, data),
     remove: (id: number) => deleteJSON(`/journal/${id}`),
     stats: () => fetchJSON("/journal/stats"),
+    performance: () => fetchJSON("/journal/performance"),
   },
   analyze: {
     run: (data: { symbol: string; portfolio_capital?: number }) => postJSON("/analyze/", data),

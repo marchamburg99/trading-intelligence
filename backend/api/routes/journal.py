@@ -141,6 +141,81 @@ def delete_journal_entry(entry_id: int, db: Session = Depends(get_db)):
     return {"id": entry_id, "status": "deleted"}
 
 
+@router.get("/performance")
+def get_performance(db: Session = Depends(get_db)):
+    """Equity-Kurve und Performance-Metriken aus Journal-Daten."""
+    closed = (
+        db.query(JournalEntry)
+        .filter(JournalEntry.is_closed == True)
+        .order_by(JournalEntry.closed_at)
+        .all()
+    )
+
+    if not closed:
+        return {"equity_curve": [], "monthly": [], "by_setup": []}
+
+    # Equity-Kurve
+    equity = 100000.0  # Start-Kapital
+    curve = [{"date": closed[0].trade_date.isoformat(), "equity": equity}]
+    peak = equity
+    max_dd = 0.0
+
+    for trade in closed:
+        pnl = float(trade.pnl) if trade.pnl else 0
+        equity += pnl
+        peak = max(peak, equity)
+        dd = (peak - equity) / peak if peak > 0 else 0
+        max_dd = max(max_dd, dd)
+        curve.append({
+            "date": (trade.closed_at or trade.trade_date).isoformat()[:10],
+            "equity": round(equity, 2),
+            "pnl": round(pnl, 2),
+            "symbol": trade.symbol,
+        })
+
+    # Monats-Performance
+    monthly = {}
+    for trade in closed:
+        month = (trade.closed_at or trade.trade_date).strftime("%Y-%m")
+        if month not in monthly:
+            monthly[month] = {"month": month, "trades": 0, "pnl": 0, "wins": 0}
+        monthly[month]["trades"] += 1
+        pnl = float(trade.pnl) if trade.pnl else 0
+        monthly[month]["pnl"] += pnl
+        if pnl > 0:
+            monthly[month]["wins"] += 1
+
+    monthly_list = sorted(monthly.values(), key=lambda x: x["month"])
+    for m in monthly_list:
+        m["pnl"] = round(m["pnl"], 2)
+        m["win_rate"] = round(m["wins"] / m["trades"] * 100, 1) if m["trades"] > 0 else 0
+
+    # Performance by Setup-Type
+    by_setup = {}
+    for trade in closed:
+        setup = trade.setup_type or "Unbekannt"
+        if setup not in by_setup:
+            by_setup[setup] = {"setup": setup, "trades": 0, "pnl": 0, "wins": 0}
+        by_setup[setup]["trades"] += 1
+        pnl = float(trade.pnl) if trade.pnl else 0
+        by_setup[setup]["pnl"] += pnl
+        if pnl > 0:
+            by_setup[setup]["wins"] += 1
+
+    setup_list = sorted(by_setup.values(), key=lambda x: x["pnl"], reverse=True)
+    for s in setup_list:
+        s["pnl"] = round(s["pnl"], 2)
+        s["win_rate"] = round(s["wins"] / s["trades"] * 100, 1) if s["trades"] > 0 else 0
+
+    return {
+        "equity_curve": curve,
+        "final_equity": round(equity, 2),
+        "max_drawdown": round(max_dd * 100, 2),
+        "monthly": monthly_list,
+        "by_setup": setup_list,
+    }
+
+
 @router.get("/stats")
 def get_journal_stats(db: Session = Depends(get_db)):
     closed = db.query(JournalEntry).filter(JournalEntry.is_closed == True).all()

@@ -52,6 +52,10 @@ export function Macro() {
     () => api.macro.ampel() as Promise<MacroAmpelType>,
     []
   );
+  const { data: calendar } = useFetch<{ date: string; event: string; importance: string; impact: string }[]>(
+    () => api.macro.calendar() as Promise<{ date: string; event: string; importance: string; impact: string }[]>,
+    []
+  );
   const [selected, setSelected] = useState("VIX");
   const { data: history } = useFetch<MacroPoint[]>(
     () => api.macro.history(selected) as Promise<MacroPoint[]>,
@@ -84,6 +88,27 @@ export function Macro() {
           <p className="text-ink-tertiary">Lade...</p>
         )}
       </div>
+
+      {/* Wirtschaftskalender */}
+      {calendar && calendar.length > 0 && (
+        <div className="card">
+          <h2 className="section-label mb-3">Wirtschaftskalender</h2>
+          <div className="space-y-2">
+            {calendar.map((e, i) => (
+              <div key={i} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0 text-sm">
+                <div className="flex items-center gap-3">
+                  <span className={`w-2 h-2 rounded-full ${e.importance === "HIGH" ? "bg-loss" : "bg-warn"}`} />
+                  <span className="font-medium">{e.event}</span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span className="text-xs text-ink-tertiary">{e.impact}</span>
+                  <span className="font-mono text-xs text-ink-secondary">{e.date}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Indicators Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">

@@ -1,7 +1,34 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { useFetch } from "@/hooks/useFetch";
 import { api } from "@/services/api";
 import type { JournalEntry, JournalStats } from "@/types";
+
+interface PerformanceData {
+  equity_curve: { date: string; equity: number; pnl?: number; symbol?: string }[];
+  final_equity?: number;
+  max_drawdown?: number;
+  monthly: { month: string; trades: number; pnl: number; win_rate: number; wins: number }[];
+  by_setup: { setup: string; trades: number; pnl: number; win_rate: number; wins: number }[];
+}
+
+const EquityChart = lazy(() =>
+  import("recharts").then((mod) => ({
+    default: ({ data }: { data: PerformanceData["equity_curve"] }) => (
+      <mod.ResponsiveContainer width="100%" height={250}>
+        <mod.AreaChart data={data}>
+          <mod.CartesianGrid strokeDasharray="3 3" stroke="#E7E5E4" />
+          <mod.XAxis dataKey="date" tick={{ fontSize: 10, fill: "#A8A29E" }} />
+          <mod.YAxis tick={{ fontSize: 10, fill: "#A8A29E" }} domain={["dataMin - 1000", "dataMax + 1000"]} />
+          <mod.Tooltip
+            contentStyle={{ backgroundColor: "#FFFFFF", border: "1px solid #E7E5E4", fontSize: 12 }}
+            formatter={(value: number) => [`€${value.toLocaleString("de-DE", { minimumFractionDigits: 2 })}`, "Equity"]}
+          />
+          <mod.Area type="monotone" dataKey="equity" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.1} strokeWidth={2} />
+        </mod.AreaChart>
+      </mod.ResponsiveContainer>
+    ),
+  }))
+);
 
 function Pnl({ value }: { value: number | null }) {
   if (value == null) return <span className="text-ink-faint">—</span>;
@@ -15,6 +42,9 @@ export function Journal() {
   );
   const { data: stats, refetch: refetchStats } = useFetch<JournalStats>(
     () => api.journal.stats() as Promise<JournalStats>, []
+  );
+  const { data: perf } = useFetch<PerformanceData>(
+    () => api.journal.performance() as Promise<PerformanceData>, []
   );
 
   const [showForm, setShowForm] = useState(false);
@@ -116,6 +146,97 @@ export function Journal() {
           <div className="card text-center">
             <p className="text-xs text-ink-tertiary">Avg P&L</p>
             <p className={`text-2xl font-bold ${stats.avg_pnl >= 0 ? "text-gain" : "text-loss"}`}>€{stats.avg_pnl.toFixed(2)}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Performance Dashboard */}
+      {perf && perf.equity_curve.length > 1 && (
+        <div className="space-y-4">
+          {/* Equity-Kurve */}
+          <div className="card">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="section-label">Equity-Kurve</h2>
+              <div className="flex items-center gap-4 text-xs">
+                {perf.final_equity != null && (
+                  <span className={perf.final_equity >= 100000 ? "text-gain" : "text-loss"}>
+                    Equity: <b className="font-mono">€{perf.final_equity.toLocaleString("de-DE", { minimumFractionDigits: 2 })}</b>
+                  </span>
+                )}
+                {perf.max_drawdown != null && (
+                  <span className="text-loss">
+                    Max DD: <b className="font-mono">{perf.max_drawdown.toFixed(2)}%</b>
+                  </span>
+                )}
+              </div>
+            </div>
+            <Suspense fallback={<div className="h-[250px] flex items-center justify-center text-ink-tertiary">Lade Chart...</div>}>
+              <EquityChart data={perf.equity_curve} />
+            </Suspense>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Monthly Performance */}
+            {perf.monthly.length > 0 && (
+              <div className="card">
+                <h2 className="section-label mb-3">Monats-Performance</h2>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-[10px] text-ink-tertiary uppercase tracking-wider">
+                        <th className="text-left pb-2">Monat</th>
+                        <th className="text-right pb-2">Trades</th>
+                        <th className="text-right pb-2">P&L</th>
+                        <th className="text-right pb-2">Win-Rate</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {perf.monthly.map((m) => (
+                        <tr key={m.month} className="border-t border-border/50">
+                          <td className="py-1.5 font-mono text-ink-secondary">{m.month}</td>
+                          <td className="py-1.5 text-right">{m.trades}</td>
+                          <td className={`py-1.5 text-right font-mono font-bold ${m.pnl >= 0 ? "text-gain" : "text-loss"}`}>
+                            {m.pnl >= 0 ? "+" : ""}€{m.pnl.toFixed(2)}
+                          </td>
+                          <td className="py-1.5 text-right font-mono">{m.win_rate.toFixed(1)}%</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Performance by Setup */}
+            {perf.by_setup.length > 0 && (
+              <div className="card">
+                <h2 className="section-label mb-3">Performance by Setup</h2>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-[10px] text-ink-tertiary uppercase tracking-wider">
+                        <th className="text-left pb-2">Setup</th>
+                        <th className="text-right pb-2">Trades</th>
+                        <th className="text-right pb-2">P&L</th>
+                        <th className="text-right pb-2">Win-Rate</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {perf.by_setup.map((s) => (
+                        <tr key={s.setup} className="border-t border-border/50">
+                          <td className="py-1.5 text-ink-secondary">{s.setup}</td>
+                          <td className="py-1.5 text-right">{s.trades}</td>
+                          <td className={`py-1.5 text-right font-mono font-bold ${s.pnl >= 0 ? "text-gain" : "text-loss"}`}>
+                            {s.pnl >= 0 ? "+" : ""}€{s.pnl.toFixed(2)}
+                          </td>
+                          <td className="py-1.5 text-right font-mono">{s.win_rate.toFixed(1)}%</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
