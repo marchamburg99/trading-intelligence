@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useFetch } from "@/hooks/useFetch";
 import { api } from "@/services/api";
@@ -133,7 +133,7 @@ function TickerDetailPanel({ symbol, onClose }: { symbol: string; onClose: () =>
 }
 
 export function WatchlistPage() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const { data: items, loading, refetch } = useFetch<WatchlistItem[]>(
     () => api.watchlist.list() as Promise<WatchlistItem[]>,
     []
@@ -141,22 +141,11 @@ export function WatchlistPage() {
   const [newSymbol, setNewSymbol] = useState("");
   const [adding, setAdding] = useState(false);
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(
-    searchParams.get("symbol")
+    searchParams.get("symbol")?.toUpperCase() || null
   );
 
-  useEffect(() => {
-    const sym = searchParams.get("symbol");
-    if (sym) setSelectedSymbol(sym.toUpperCase());
-  }, [searchParams]);
-
   const handleSelectSymbol = (symbol: string) => {
-    if (selectedSymbol === symbol) {
-      setSelectedSymbol(null);
-      setSearchParams({});
-    } else {
-      setSelectedSymbol(symbol);
-      setSearchParams({ symbol });
-    }
+    setSelectedSymbol(prev => prev === symbol ? null : symbol);
   };
 
   const handleAdd = async () => {
@@ -176,7 +165,6 @@ export function WatchlistPage() {
     await api.watchlist.remove(symbol);
     if (selectedSymbol === symbol) {
       setSelectedSymbol(null);
-      setSearchParams({});
     }
     refetch();
   };
@@ -287,7 +275,7 @@ export function WatchlistPage() {
       {selectedSymbol && (
         <TickerDetailPanel
           symbol={selectedSymbol}
-          onClose={() => { setSelectedSymbol(null); setSearchParams({}); }}
+          onClose={() => setSelectedSymbol(null)}
         />
       )}
     </div>
