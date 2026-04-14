@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TradingIntel — Pitchdeck</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; scroll-snap-type: y mandatory; }
+  body { font-family: 'DM Sans', system-ui, sans-serif; background: #fafaf9; color: #1c1917; overflow-x: hidden; }
+
+  .slide {
+    min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
+    padding: 60px 40px; position: relative; scroll-snap-align: start;
+  }
+  .slide-inner { max-width: 900px; width: 100%; }
+
+  /* Animations */
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes scaleIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+  @keyframes slideRight { from { opacity: 0; transform: translateX(-40px); } to { opacity: 1; transform: translateX(0); } }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+  @keyframes gradient { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+
+  .fade-up { opacity: 0; animation: fadeUp 0.8s ease-out forwards; }
+  .scale-in { opacity: 0; animation: scaleIn 0.6s ease-out forwards; }
+  .slide-right { opacity: 0; animation: slideRight 0.7s ease-out forwards; }
+  .d1 { animation-delay: 0.1s; } .d2 { animation-delay: 0.2s; } .d3 { animation-delay: 0.3s; }
+  .d4 { animation-delay: 0.4s; } .d5 { animation-delay: 0.5s; } .d6 { animation-delay: 0.6s; }
+  .d7 { animation-delay: 0.7s; } .d8 { animation-delay: 0.8s; }
+
+  /* Slide 1 — Hero */
+  .slide-hero { background: linear-gradient(135deg, #eff6ff 0%, #fafaf9 50%, #f0fdf4 100%); }
+  .hero-title { font-size: 72px; font-weight: 700; letter-spacing: -2px; line-height: 1; }
+  .hero-title span { background: linear-gradient(135deg, #1d4ed8, #7c3aed); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .hero-sub { font-size: 24px; color: #57534e; margin-top: 16px; font-weight: 400; }
+  .hero-tagline { font-size: 17px; color: #a8a29e; margin-top: 32px; line-height: 1.7; }
+  .hero-line { width: 80px; height: 3px; background: linear-gradient(90deg, #1d4ed8, #7c3aed); border-radius: 2px; margin-top: 32px; }
+  .scroll-hint { position: absolute; bottom: 40px; font-size: 13px; color: #a8a29e; animation: pulse 2s infinite; }
+
+  /* Slide 2 — Problem */
+  .slide-problem { background: #fff; }
+  .section-tag { font-size: 12px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: #dc2626; margin-bottom: 12px; }
+  .section-title { font-size: 44px; font-weight: 700; letter-spacing: -1px; margin-bottom: 48px; }
+  .problem-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 48px; }
+  .problem-card {
+    background: #fef2f2; border: 1px solid #fecaca; border-radius: 20px; padding: 32px 24px;
+    text-align: center; transition: transform 0.3s; cursor: default;
+  }
+  .problem-card:hover { transform: translateY(-4px); }
+  .problem-icon { font-size: 48px; margin-bottom: 16px; }
+  .problem-card h3 { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+  .problem-card p { font-size: 14px; color: #57534e; line-height: 1.6; }
+  .problem-bottom { font-size: 17px; color: #57534e; line-height: 1.8; text-align: center; }
+
+  /* Slide 3 — Solution */
+  .slide-solution { background: linear-gradient(180deg, #f0fdf4 0%, #fafaf9 100%); }
+  .section-tag-green { font-size: 12px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: #15803d; margin-bottom: 12px; }
+  .solution-layout { display: flex; gap: 48px; align-items: center; }
+  .solution-list { flex: 1; }
+  .solution-item {
+    display: flex; align-items: center; gap: 16px; padding: 20px 24px;
+    background: #fff; border: 1px solid #dcfce7; border-radius: 16px; margin-bottom: 16px;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .solution-item:hover { transform: translateX(8px); box-shadow: 0 4px 20px rgba(21,128,61,0.08); }
+  .solution-num { width: 40px; height: 40px; background: #15803d; color: #fff; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 18px; flex-shrink: 0; }
+  .solution-text h3 { font-size: 18px; font-weight: 600; }
+  .solution-text p { font-size: 14px; color: #57534e; margin-top: 2px; }
+  .solution-visual {
+    width: 280px; flex-shrink: 0; background: #fff; border-radius: 24px; border: 2px solid #e7e5e4;
+    padding: 24px; box-shadow: 0 8px 40px rgba(0,0,0,0.06);
+  }
+  .mock-header { font-size: 11px; color: #a8a29e; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; font-weight: 600; }
+  .mock-signal { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f5f5f4; }
+  .mock-signal:last-child { border-bottom: none; }
+  .mock-ticker { font-weight: 700; font-size: 16px; }
+  .mock-badge { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 8px; }
+  .mock-hold { background: #f5f5f4; color: #57534e; }
+  .mock-pct { font-size: 14px; font-weight: 600; color: #15803d; }
+
+  /* Slide 4 — How it works */
+  .slide-how { background: #fff; }
+  .section-tag-blue { font-size: 12px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: #1d4ed8; margin-bottom: 12px; }
+  .flow { display: flex; align-items: center; gap: 0; margin-bottom: 48px; }
+  .flow-step {
+    flex: 1; text-align: center; padding: 28px 16px; border-radius: 20px; position: relative;
+  }
+  .flow-step-icon { font-size: 40px; margin-bottom: 12px; }
+  .flow-step h3 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+  .flow-step p { font-size: 13px; color: #57534e; }
+  .flow-arrow { font-size: 24px; color: #d6d3d1; flex-shrink: 0; margin: 0 -8px; }
+  .flow-1 { background: #eff6ff; }
+  .flow-2 { background: #f5f3ff; }
+  .flow-3 { background: #f0fdf4; }
+  .flow-4 { background: #fffbeb; }
+  .factors { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .factor { padding: 14px 16px; background: #fafaf9; border: 1px solid #e7e5e4; border-radius: 12px; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+  .factor-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  /* Slide 5 — Features */
+  .slide-features { background: linear-gradient(180deg, #fafaf9 0%, #f5f3ff 100%); }
+  .section-tag-purple { font-size: 12px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: #7c3aed; margin-bottom: 12px; }
+  .feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .feature-card {
+    padding: 28px 24px; border-radius: 20px; background: #fff; border: 1px solid #e7e5e4;
+    transition: transform 0.3s, box-shadow 0.3s; cursor: default;
+  }
+  .feature-card:hover { transform: translateY(-4px); box-shadow: 0 8px 30px rgba(0,0,0,0.06); }
+  .feature-icon { font-size: 32px; margin-bottom: 12px; }
+  .feature-card h3 { font-size: 17px; font-weight: 600; margin-bottom: 6px; }
+  .feature-card p { font-size: 13px; color: #57534e; line-height: 1.6; }
+
+  /* Slide 6 — Safety */
+  .slide-safety { background: #fff; }
+  .safety-layout { display: flex; gap: 48px; align-items: center; }
+  .safety-list { flex: 1; }
+  .safety-item {
+    display: flex; gap: 16px; align-items: flex-start; padding: 20px 0;
+    border-bottom: 1px solid #f5f5f4;
+  }
+  .safety-item:last-child { border-bottom: none; }
+  .safety-check { width: 32px; height: 32px; background: #f0fdf4; border: 2px solid #22c55e; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #15803d; font-weight: 700; font-size: 16px; }
+  .safety-text h3 { font-size: 17px; font-weight: 600; }
+  .safety-text p { font-size: 14px; color: #57534e; margin-top: 2px; }
+  .safety-visual {
+    width: 300px; flex-shrink: 0; background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+    border-radius: 24px; padding: 40px; text-align: center; border: 1px solid #bbf7d0;
+  }
+  .shield { font-size: 80px; margin-bottom: 16px; line-height: 1; }
+  .safety-visual h3 { font-size: 22px; font-weight: 700; color: #15803d; }
+  .safety-visual p { font-size: 14px; color: #57534e; margin-top: 8px; line-height: 1.6; }
+
+  /* Slide 7 — Outro */
+  .slide-outro { background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 50%, #f0fdf4 100%); text-align: center; }
+  .outro-title { font-size: 56px; font-weight: 700; letter-spacing: -2px; }
+  .outro-sub { font-size: 22px; color: #57534e; margin-top: 12px; }
+  .outro-line { width: 80px; height: 3px; background: linear-gradient(90deg, #1d4ed8, #7c3aed); border-radius: 2px; margin: 32px auto; }
+  .outro-details { font-size: 15px; color: #a8a29e; line-height: 2; }
+  .outro-cta {
+    display: inline-block; margin-top: 40px; padding: 16px 40px; background: #1c1917; color: #fff;
+    border-radius: 16px; font-weight: 600; font-size: 16px; text-decoration: none;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .outro-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.15); }
+
+  /* Intersection Observer reveal */
+  .reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.6s ease, transform 0.6s ease; }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+  .reveal.d1 { transition-delay: 0.1s; } .reveal.d2 { transition-delay: 0.2s; }
+  .reveal.d3 { transition-delay: 0.3s; } .reveal.d4 { transition-delay: 0.4s; }
+  .reveal.d5 { transition-delay: 0.5s; } .reveal.d6 { transition-delay: 0.6s; }
+  .reveal.d7 { transition-delay: 0.7s; } .reveal.d8 { transition-delay: 0.8s; }
+
+  /* Nav dots */
+  .nav-dots {
+    position: fixed; right: 24px; top: 50%; transform: translateY(-50%); z-index: 100;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .nav-dot {
+    width: 10px; height: 10px; border-radius: 50%; background: #d6d3d1; border: none;
+    cursor: pointer; transition: all 0.3s; padding: 0;
+  }
+  .nav-dot.active { background: #1d4ed8; transform: scale(1.3); }
+
+  @media (max-width: 768px) {
+    .problem-grid, .feature-grid, .factors { grid-template-columns: 1fr; }
+    .solution-layout, .safety-layout { flex-direction: column; }
+    .solution-visual, .safety-visual { width: 100%; }
+    .flow { flex-direction: column; }
+    .flow-arrow { transform: rotate(90deg); }
+    .hero-title { font-size: 48px; }
+    .section-title { font-size: 32px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Nav Dots -->
+<div class="nav-dots">
+  <button class="nav-dot active" onclick="document.getElementById('s1').scrollIntoView()"></button>
+  <button class="nav-dot" onclick="document.getElementById('s2').scrollIntoView()"></button>
+  <button class="nav-dot" onclick="document.getElementById('s3').scrollIntoView()"></button>
+  <button class="nav-dot" onclick="document.getElementById('s4').scrollIntoView()"></button>
+  <button class="nav-dot" onclick="document.getElementById('s5').scrollIntoView()"></button>
+  <button class="nav-dot" onclick="document.getElementById('s6').scrollIntoView()"></button>
+  <button class="nav-dot" onclick="document.getElementById('s7').scrollIntoView()"></button>
+</div>
+
+<!-- Slide 1: Hero -->
+<section class="slide slide-hero" id="s1">
+  <div class="slide-inner" style="text-align:center;">
+    <div class="hero-title fade-up">Trading<span>Intel</span></div>
+    <div class="hero-sub fade-up d2">Dein persoenlicher Boersen-Assistent</div>
+    <div class="hero-line fade-up d3" style="margin:32px auto;"></div>
+    <div class="hero-tagline fade-up d4">
+      Wie ein Finanzberater &mdash; nur schneller,<br>guenstiger und rund um die Uhr da.
+    </div>
+  </div>
+  <div class="scroll-hint">Nach unten scrollen</div>
+</section>
+
+<!-- Slide 2: Problem -->
+<section class="slide slide-problem" id="s2">
+  <div class="slide-inner">
+    <div class="section-tag reveal">DAS PROBLEM</div>
+    <h2 class="section-title reveal d1">Boerse ist verwirrend.</h2>
+    <div class="problem-grid">
+      <div class="problem-card reveal d2">
+        <div class="problem-icon">&#x1F4CA;</div>
+        <h3>Tausende Aktien</h3>
+        <p>Welche soll ich kaufen? Apple? Tesla? Gold? Keine Ahnung wo anfangen.</p>
+      </div>
+      <div class="problem-card reveal d3">
+        <div class="problem-icon">&#x1F4F0;</div>
+        <h3>Nachrichten-Chaos</h3>
+        <p>Jeden Tag neue Schlagzeilen. Was davon ist wichtig fuer mein Geld?</p>
+      </div>
+      <div class="problem-card reveal d4">
+        <div class="problem-icon">&#x1F628;</div>
+        <h3>Emotionen</h3>
+        <p>Panik wenn es faellt, Gier wenn es steigt. Beides kostet Geld.</p>
+      </div>
+    </div>
+    <p class="problem-bottom reveal d5">
+      Die meisten Privatanleger verlieren Geld &mdash; weil sie zu spaet reagieren,<br>zu emotional handeln und nicht wissen wo sie anfangen sollen.
+    </p>
+  </div>
+</section>
+
+<!-- Slide 3: Solution -->
+<section class="slide slide-solution" id="s3">
+  <div class="slide-inner">
+    <div class="section-tag-green reveal">DIE LOESUNG</div>
+    <h2 class="section-title reveal d1">TradingIntel sagt dir genau<br>was zu tun ist.</h2>
+    <div class="solution-layout">
+      <div class="solution-list">
+        <div class="solution-item reveal d2">
+          <div class="solution-num">1</div>
+          <div class="solution-text">
+            <h3>WAS kaufen oder verkaufen</h3>
+            <p>Klare Empfehlung mit Begruendung, keine Raetselei</p>
+          </div>
+        </div>
+        <div class="solution-item reveal d3">
+          <div class="solution-num">2</div>
+          <div class="solution-text">
+            <h3>WANN einsteigen und aussteigen</h3>
+            <p>Exakter Einstiegskurs, Stop-Loss und Take-Profit</p>
+          </div>
+        </div>
+        <div class="solution-item reveal d4">
+          <div class="solution-num">3</div>
+          <div class="solution-text">
+            <h3>WIE VIEL investieren</h3>
+            <p>Berechnet automatisch die sichere Stueckzahl</p>
+          </div>
+        </div>
+      </div>
+      <div class="solution-visual reveal d5">
+        <div class="mock-header">TOP SIGNALE</div>
+        <div class="mock-signal">
+          <span class="mock-ticker">USO</span>
+          <span class="mock-badge mock-hold">HOLD</span>
+          <span class="mock-pct">63%</span>
+        </div>
+        <div class="mock-signal">
+          <span class="mock-ticker">MRK</span>
+          <span class="mock-badge mock-hold">HOLD</span>
+          <span class="mock-pct">63%</span>
+        </div>
+        <div class="mock-signal">
+          <span class="mock-ticker">XLE</span>
+          <span class="mock-badge mock-hold">HOLD</span>
+          <span class="mock-pct">63%</span>
+        </div>
+        <div class="mock-signal">
+          <span class="mock-ticker">COST</span>
+          <span class="mock-badge mock-hold">HOLD</span>
+          <span class="mock-pct">60%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Slide 4: How -->
+<section class="slide slide-how" id="s4">
+  <div class="slide-inner">
+    <div class="section-tag-blue reveal">WIE FUNKTIONIERT DAS?</div>
+    <h2 class="section-title reveal d1">KI analysiert. Du entscheidest.</h2>
+    <div class="flow">
+      <div class="flow-step flow-1 reveal d2">
+        <div class="flow-step-icon">&#x1F50D;</div>
+        <h3>87 Aktien</h3>
+        <p>werden rund um die Uhr ueberwacht</p>
+      </div>
+      <div class="flow-arrow reveal d3">&#x2794;</div>
+      <div class="flow-step flow-2 reveal d3">
+        <div class="flow-step-icon">&#x1F9E0;</div>
+        <h3>KI analysiert</h3>
+        <p>6 verschiedene Faktoren gleichzeitig</p>
+      </div>
+      <div class="flow-arrow reveal d4">&#x2794;</div>
+      <div class="flow-step flow-3 reveal d4">
+        <div class="flow-step-icon">&#x2705;</div>
+        <h3>Empfehlung</h3>
+        <p>Kauf/Verkauf mit Begruendung</p>
+      </div>
+      <div class="flow-arrow reveal d5">&#x2794;</div>
+      <div class="flow-step flow-4 reveal d5">
+        <div class="flow-step-icon">&#x1F446;</div>
+        <h3>1 Klick</h3>
+        <p>Trade wird ins Journal gebucht</p>
+      </div>
+    </div>
+    <h3 class="reveal d6" style="font-size:18px; margin-bottom:16px;">Die 6 Faktoren:</h3>
+    <div class="factors">
+      <div class="factor reveal d6"><div class="factor-dot" style="background:#4a9eed;"></div> Charttechnik (Muster erkennen)</div>
+      <div class="factor reveal d6"><div class="factor-dot" style="background:#8b5cf6;"></div> Momentum (Schwung der Aktie)</div>
+      <div class="factor reveal d7"><div class="factor-dot" style="background:#f59e0b;"></div> Hedge Fonds (was kaufen die Profis?)</div>
+      <div class="factor reveal d7"><div class="factor-dot" style="background:#22c55e;"></div> Wirtschaftslage (Zinsen, Inflation)</div>
+      <div class="factor reveal d8"><div class="factor-dot" style="background:#ef4444;"></div> Nachrichten-Stimmung</div>
+      <div class="factor reveal d8"><div class="factor-dot" style="background:#06b6d4;"></div> Wissenschaftliche Studien</div>
+    </div>
+  </div>
+</section>
+
+<!-- Slide 5: Features -->
+<section class="slide slide-features" id="s5">
+  <div class="slide-inner">
+    <div class="section-tag-purple reveal">FEATURES</div>
+    <h2 class="section-title reveal d1">Alles was du brauchst.<br>Nichts was verwirrt.</h2>
+    <div class="feature-grid">
+      <div class="feature-card reveal d2">
+        <div class="feature-icon">&#x1F3E6;</div>
+        <h3>Hedge Fund Tracker</h3>
+        <p>Sieh was die groessten Investoren der Welt gerade kaufen und verkaufen.</p>
+      </div>
+      <div class="feature-card reveal d3">
+        <div class="feature-icon">&#x26A1;</div>
+        <h3>Hebel-Produkte</h3>
+        <p>Fuer Fortgeschrittene: 3x Rendite (und 3x Risiko). Mit klarer Warnung.</p>
+      </div>
+      <div class="feature-card reveal d4">
+        <div class="feature-icon">&#x1FA99;</div>
+        <h3>Crypto &amp; Rohstoffe</h3>
+        <p>Bitcoin, Gold, Oel &mdash; alles in einer App. Gleiche Analyse-Qualitaet.</p>
+      </div>
+      <div class="feature-card reveal d5">
+        <div class="feature-icon">&#x2600;&#xFE0F;</div>
+        <h3>Morning Briefing</h3>
+        <p>Jeden Morgen: &bdquo;Was muss ich heute tun?&ldquo; In 30 Sekunden informiert.</p>
+      </div>
+      <div class="feature-card reveal d6">
+        <div class="feature-icon">&#x1F6E1;&#xFE0F;</div>
+        <h3>Risiko-Management</h3>
+        <p>Nie mehr als 2% deines Geldes pro Trade riskieren. Automatisch berechnet.</p>
+      </div>
+      <div class="feature-card reveal d7">
+        <div class="feature-icon">&#x1F4D3;</div>
+        <h3>Trade Journal</h3>
+        <p>Lerne aus jedem Trade. Statistiken zeigen was funktioniert hat.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Slide 6: Safety -->
+<section class="slide slide-safety" id="s6">
+  <div class="slide-inner">
+    <div class="section-tag-green reveal">SICHERHEIT</div>
+    <h2 class="section-title reveal d1">Dein Geld ist das Wichtigste.</h2>
+    <div class="safety-layout">
+      <div class="safety-list">
+        <div class="safety-item reveal d2">
+          <div class="safety-check">&#x2713;</div>
+          <div class="safety-text">
+            <h3>Automatischer Stop-Loss</h3>
+            <p>Bei jedem Trade wird eine Verlustgrenze gesetzt. Egal was passiert &mdash; mehr als diesen Betrag verlierst du nicht.</p>
+          </div>
+        </div>
+        <div class="safety-item reveal d3">
+          <div class="safety-check">&#x2713;</div>
+          <div class="safety-text">
+            <h3>Maximal 2% Risiko pro Trade</h3>
+            <p>Selbst wenn ein Trade komplett schiefgeht, verlierst du hoechstens 2% deines Gesamtkapitals.</p>
+          </div>
+        </div>
+        <div class="safety-item reveal d4">
+          <div class="safety-check">&#x2713;</div>
+          <div class="safety-text">
+            <h3>Volatilitaets-Warnung</h3>
+            <p>Wenn der Markt verrueckt spielt (VIX hoch), warnt die App und reduziert automatisch die Positionsgroessen.</p>
+          </div>
+        </div>
+        <div class="safety-item reveal d5">
+          <div class="safety-check">&#x2713;</div>
+          <div class="safety-text">
+            <h3>Keine Blackbox</h3>
+            <p>Jede Empfehlung kommt mit einer verstaendlichen Begruendung. Du weisst WARUM.</p>
+          </div>
+        </div>
+      </div>
+      <div class="safety-visual reveal d6">
+        <div class="shield">&#x1F6E1;&#xFE0F;</div>
+        <h3>Kapitalerhalt<br>vor Rendite</h3>
+        <p>Die App verweigert Trades die zu riskant sind.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Slide 7: Outro -->
+<section class="slide slide-outro" id="s7">
+  <div class="slide-inner">
+    <div class="outro-title reveal">Trading<span style="background:linear-gradient(135deg,#1d4ed8,#7c3aed);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Intel</span></div>
+    <div class="outro-sub reveal d1">Boerse verstehen. Besser handeln.</div>
+    <div class="outro-line reveal d2"></div>
+    <div class="outro-details reveal d3">
+      87 Aktien, ETFs, Crypto, Rohstoffe, Hebelprodukte<br>
+      Automatisch aktualisiert, rund um die Uhr bereit<br>
+      Gebaut mit kuenstlicher Intelligenz + echten Marktdaten
+    </div>
+    <a href="http://localhost:3000" class="outro-cta reveal d4">App oeffnen &rarr;</a>
+  </div>
+</section>
+
+<script>
+  // Intersection Observer for reveal animations
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) entry.target.classList.add('visible');
+    });
+  }, { threshold: 0.15 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  // Nav dots
+  const dots = document.querySelectorAll('.nav-dot');
+  const slides = document.querySelectorAll('.slide');
+  const slideObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const idx = Array.from(slides).indexOf(entry.target);
+        dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+      }
+    });
+  }, { threshold: 0.5 });
+  slides.forEach(s => slideObserver.observe(s));
+</script>
+</body>
+</html>

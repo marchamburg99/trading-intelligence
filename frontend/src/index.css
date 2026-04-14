@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-surface-subtle text-ink antialiased font-sans;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  ::selection {
+    @apply bg-accent/10 text-accent;
+  }
+
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    opacity: 1;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-surface rounded-2xl border border-border p-6 shadow-card transition-shadow;
+  }
+
+  .card:hover {
+    @apply shadow-card-hover;
+  }
+
+  .btn-primary {
+    @apply bg-ink text-white px-4 py-2 rounded-xl font-medium text-sm transition-all hover:bg-ink/90 active:scale-[0.98];
+  }
+
+  .btn-secondary {
+    @apply bg-surface-muted text-ink px-4 py-2 rounded-xl font-medium text-sm transition-all border border-border hover:bg-surface-subtle active:scale-[0.98];
+  }
+
+  .section-label {
+    @apply text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-tertiary;
+  }
+
+  .input {
+    @apply w-full bg-surface-muted border border-border rounded-xl px-3 py-2 text-sm text-ink placeholder:text-ink-tertiary focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all;
+  }
+}

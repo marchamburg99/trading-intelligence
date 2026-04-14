@@ -1,0 +1,46 @@
+# Web Framework
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+pydantic-settings==2.7.1
+
+# Database
+sqlalchemy==2.0.36
+alembic==1.14.1
+psycopg2-binary==2.9.10
+asyncpg==0.30.0
+
+# Task Queue
+celery[redis]==5.4.0
+redis==5.2.1
+
+# Data & Finance
+yfinance>=0.2.51
+pandas>=2.2.3
+numpy>=2.2.6
+pandas-ta==0.4.71b0
+
+# AI
+anthropic>=0.43.0
+
+# Sentiment
+vaderSentiment==3.3.2
+praw==7.8.1
+newsapi-python==0.2.7
+
+# Macro Data
+fredapi==0.5.2
+
+# HTTP & Scraping
+httpx==0.28.1
+beautifulsoup4==4.12.3
+feedparser==6.0.11
+
+# Testing
+pytest==8.3.4
+pytest-asyncio==0.25.0
+pytest-cov==6.0.0
+
+# Utilities
+python-dotenv==1.0.1
+structlog==24.4.0
