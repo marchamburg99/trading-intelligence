@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useFetch } from "@/hooks/useFetch";
 import { api } from "@/services/api";
 import { SignalBadge } from "@/components/SignalBadge";
@@ -169,9 +169,28 @@ function TradeCard({ s, type }: { s: SignalItem; type: "buy" | "sell" | "watch" 
 }
 
 export function Dashboard() {
-  const { data, loading } = useFetch<DashboardData>(
+  const { data, loading, refetch } = useFetch<DashboardData>(
     () => api.dashboard.overview() as Promise<DashboardData>, [], 60000,
   );
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+  const [refreshing, setRefreshing] = useState(false);
+  const [, setTick] = useState(0);
+
+  // Timer tickt jede 10s damit "vor Xs" live zählt
+  useEffect(() => {
+    const timer = setInterval(() => setTick(t => t + 1), 10000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Update timestamp wenn neue Daten kommen
+  useEffect(() => { if (data) setLastUpdate(new Date()); }, [data]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await refetch();
+    setLastUpdate(new Date());
+    setRefreshing(false);
+  };
 
   if (loading || !data) {
     return (
@@ -188,8 +207,34 @@ export function Dashboard() {
   const hasBuys = data.signals.buys.length > 0;
   const hasSells = data.signals.sells.length > 0;
 
+  const secondsAgo = Math.floor((Date.now() - lastUpdate.getTime()) / 1000);
+  const timeLabel = secondsAgo < 5 ? "gerade eben" : secondsAgo < 60 ? `vor ${secondsAgo}s` : `vor ${Math.floor(secondsAgo / 60)}min`;
+
   return (
     <div className="space-y-6">
+      {/* === STATUS BAR === */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-gain animate-pulse" />
+            <span className="text-[11px] font-medium text-gain">LIVE</span>
+          </div>
+          <span className="text-[11px] text-ink-faint">
+            Aktualisiert {timeLabel} · Auto-Refresh 60s · Kurse via yfinance/Alpha Vantage
+          </span>
+        </div>
+        <button
+          onClick={handleRefresh}
+          disabled={refreshing}
+          className="flex items-center gap-1.5 text-[11px] font-medium text-ink-secondary hover:text-accent bg-surface-muted hover:bg-accent-light border border-border rounded-lg px-3 py-1.5 transition-all active:scale-[0.97] disabled:opacity-50"
+        >
+          <svg className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          {refreshing ? "Lade..." : "Aktualisieren"}
+        </button>
+      </div>
+
       {/* === MORNING BRIEFING === */}
       <div className={`card border ${a.bg}`}>
         <div className="flex items-center justify-between mb-3">
