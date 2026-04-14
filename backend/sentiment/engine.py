@@ -1,4 +1,5 @@
 """Sentiment Engine: News, Reddit, Fear & Greed, Put/Call Ratio."""
+import structlog
 from datetime import date, datetime
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from sqlalchemy.orm import Session
@@ -7,6 +8,7 @@ from sqlalchemy import desc
 from core.config import get_settings
 from core.models import Ticker, SentimentScore, NewsItem
 
+logger = structlog.get_logger()
 settings = get_settings()
 vader = SentimentIntensityAnalyzer()
 
@@ -77,7 +79,8 @@ def analyze_reddit_sentiment(symbol: str) -> tuple[float, int] | None:
                 vs = vader.polarity_scores(text)
                 scores.append(vs["compound"])
                 mention_count += 1
-        except Exception:
+        except Exception as e:
+            logger.warning("reddit_subreddit_fetch_failed", subreddit=sub_name, symbol=symbol, error=str(e))
             continue
 
     if not scores:

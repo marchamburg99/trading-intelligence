@@ -1,4 +1,5 @@
 """Makro-Daten von FRED API und Yahoo Finance (VIX)."""
+import structlog
 from datetime import date, timedelta
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
@@ -6,6 +7,7 @@ from sqlalchemy import desc
 from core.config import get_settings
 from core.models import MacroData, MacroStatus
 
+logger = structlog.get_logger()
 settings = get_settings()
 
 
@@ -125,10 +127,11 @@ def fetch_all_macro(db: Session):
     for series_id, name in fred_series.items():
         try:
             fetch_fred_series(series_id, name, db)
-        except Exception:
+        except Exception as e:
+            logger.warning("fred_series_fetch_failed", series_id=series_id, indicator=name, error=str(e))
             continue
 
     try:
         fetch_vix(db)
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("vix_fetch_failed", error=str(e))

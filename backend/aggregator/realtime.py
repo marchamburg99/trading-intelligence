@@ -1,11 +1,13 @@
 """Realtime-Kurse: Alpha Vantage (Top-Ticker) + yfinance (Rest)."""
 import time
+import structlog
 import httpx
 import yfinance as yf
 import redis
 import json
 from core.config import get_settings
 
+logger = structlog.get_logger()
 settings = get_settings()
 redis_client = redis.from_url(settings.redis_url)
 
@@ -58,7 +60,8 @@ def get_realtime_quote_av(symbol: str) -> dict | None:
             "change_pct": float(data.get("10. change percent", "0").replace("%", "")),
             "source": "alphavantage",
         }
-    except Exception:
+    except Exception as e:
+        logger.warning("alphavantage_quote_failed", symbol=symbol, error=str(e))
         return None
 
 
@@ -87,7 +90,8 @@ def get_realtime_quote_yf(symbol: str) -> dict | None:
             "change_pct": round(float(change_pct), 2),
             "source": "yfinance",
         }
-    except Exception:
+    except Exception as e:
+        logger.warning("yfinance_quote_failed", symbol=symbol, error=str(e))
         return None
 
 

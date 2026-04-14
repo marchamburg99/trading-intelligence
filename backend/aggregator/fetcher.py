@@ -1,4 +1,5 @@
 import math
+import structlog
 import yfinance as yf
 import pandas as pd
 import pandas_ta as ta
@@ -6,6 +7,8 @@ from datetime import date, timedelta
 from sqlalchemy.orm import Session
 
 from core.models import Ticker, OHLCVData, Indicator
+
+logger = structlog.get_logger()
 
 
 def safe_float(val):
@@ -31,7 +34,8 @@ def fetch_and_store_ohlcv(symbol: str, db: Session, period: str = "1y") -> bool:
     if not ticker:
         try:
             info = ticker_obj.info
-        except Exception:
+        except Exception as e:
+            logger.warning("ticker_info_fetch_failed", symbol=symbol, error=str(e))
             info = {}
         ticker = Ticker(
             symbol=symbol,

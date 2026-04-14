@@ -1,4 +1,5 @@
 """SEC EDGAR 13F Filing Parser."""
+import structlog
 import httpx
 from datetime import date
 from xml.etree import ElementTree
@@ -7,6 +8,7 @@ from sqlalchemy.orm import Session
 from core.config import get_settings
 from core.models import HedgeFundFiling, HedgeFundPosition
 
+logger = structlog.get_logger()
 settings = get_settings()
 
 # Top Hedge Funds mit CIK-Nummern
@@ -160,7 +162,8 @@ def parse_13f_positions(
 
         return count
 
-    except Exception:
+    except Exception as e:
+        logger.warning("parse_13f_positions_failed", cik=cik, accession=accession, error=str(e))
         return 0
 
 
@@ -169,5 +172,6 @@ def scan_all_funds(db: Session):
     for fund_name, cik in TOP_FUNDS.items():
         try:
             fetch_latest_13f(cik, fund_name, db)
-        except Exception:
+        except Exception as e:
+            logger.warning("fund_13f_scan_failed", fund_name=fund_name, cik=cik, error=str(e))
             continue

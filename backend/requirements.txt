@@ -15,13 +15,13 @@ celery[redis]==5.4.0
 redis==5.2.1
 
 # Data & Finance
-yfinance>=0.2.51
-pandas>=2.2.3
-numpy>=2.2.6
+yfinance==0.2.51
+pandas==2.2.3
+numpy==2.2.6
 pandas-ta==0.4.71b0
 
 # AI
-anthropic>=0.43.0
+anthropic==0.43.0
 
 # Sentiment
 vaderSentiment==3.3.2

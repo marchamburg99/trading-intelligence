@@ -1,5 +1,6 @@
 """Paper Aggregator: SSRN RSS, AQR, Two Sigma, Man Institute."""
 import json
+import structlog
 import feedparser
 import anthropic
 from datetime import date
@@ -8,6 +9,7 @@ from sqlalchemy.orm import Session
 from core.config import get_settings
 from core.models import Paper
 
+logger = structlog.get_logger()
 settings = get_settings()
 
 ARXIV_FEEDS = [
@@ -50,7 +52,8 @@ def fetch_ssrn_papers(db: Session):
                 )
                 db.add(paper)
             db.commit()
-        except Exception:
+        except Exception as e:
+            logger.warning("arxiv_feed_fetch_failed", feed_url=feed_url, error=str(e))
             db.rollback()
             continue
 
@@ -87,7 +90,8 @@ Antworte im JSON-Format:
         if "```json" in response_text:
             response_text = response_text.split("```json")[1].split("```")[0]
         return json.loads(response_text.strip())
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as e:
+        logger.warning("paper_summary_parse_failed", paper_title=paper.title, error=str(e))
         return None
 
 

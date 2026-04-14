@@ -14,7 +14,6 @@ Two Sigma Factor Lens, Pan/Poteshman PCR-Studie, RegimeFolio (arXiv 2025)
 """
 from datetime import date, timedelta
 from decimal import Decimal
-from math import sqrt
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, func
 
