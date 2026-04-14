@@ -163,6 +163,7 @@ function TradeCard({ s, type }: { s: SignalItem; type: "buy" | "sell" | "watch" 
             <span>Sent:{s.sentiment_score.toFixed(0)}</span><span>Makro:{s.macro_score.toFixed(0)}</span>
             <span>R:R 1:{s.risk_reward_ratio.toFixed(1)}</span><span>{s.expected_hold_days}d</span>
           </div>
+          <a href={`/risk?entry_price=${s.entry_price}&stop_loss=${s.stop_loss}&take_profit=${s.take_profit}`} className="text-[10px] text-ink-tertiary hover:text-accent">Risiko berechnen</a>
           <button onClick={handleOpenExec}
             className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all active:scale-[0.98] ${
               type === "buy" ? "bg-gain text-white hover:bg-gain/90" :

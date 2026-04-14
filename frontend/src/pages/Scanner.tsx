@@ -1,6 +1,12 @@
 import { useState } from "react";
 import { api } from "@/services/api";
 
+const SECTORS = [
+  "Technology", "Healthcare", "Financial Services", "Energy", "Industrials",
+  "Consumer Cyclical", "Consumer Defensive", "Utilities", "Communication Services",
+  "Real Estate", "Basic Materials",
+];
+
 interface ScanResult {
   symbol: string;
   name: string;
@@ -15,6 +21,9 @@ interface ScanResult {
 export function Scanner() {
   const [rsiBellow, setRsiBelow] = useState<string>("");
   const [macdBullish, setMacdBullish] = useState<string>("");
+  const [sector, setSector] = useState<string>("");
+  const [aboveEma200, setAboveEma200] = useState(false);
+  const [minConfidence, setMinConfidence] = useState<number>(0);
   const [scanning, setScanning] = useState(false);
   const [results, setResults] = useState<ScanResult[]>([]);
 
@@ -24,6 +33,9 @@ export function Scanner() {
     if (rsiBellow) params.set("rsi_below", rsiBellow);
     if (macdBullish === "true") params.set("macd_bullish", "true");
     if (macdBullish === "false") params.set("macd_bullish", "false");
+    if (sector) params.set("sector", sector);
+    if (aboveEma200) params.set("above_ema200", "true");
+    if (minConfidence > 0) params.set("min_confidence", String(minConfidence));
 
     try {
       const data = (await api.scanner.scan(params.toString())) as ScanResult[];
@@ -64,6 +76,44 @@ export function Scanner() {
               <option value="true">Bullish (MACD &gt; Signal)</option>
               <option value="false">Bearish (MACD &lt; Signal)</option>
             </select>
+          </label>
+          <label className="block">
+            <span className="text-sm text-ink-tertiary block mb-1">Sektor</span>
+            <select
+              value={sector}
+              onChange={(e) => setSector(e.target.value)}
+              className="input w-full"
+            >
+              <option value="">Alle Sektoren</option>
+              {SECTORS.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={aboveEma200}
+              onChange={(e) => setAboveEma200(e.target.checked)}
+              className="rounded border-border"
+            />
+            <span className="text-sm text-ink-tertiary">Ueber EMA200</span>
+          </label>
+          <label className="block">
+            <span className="text-sm text-ink-tertiary block mb-1">
+              Min. Konfidenz: {minConfidence > 0 ? `${minConfidence}%` : "Aus"}
+            </span>
+            <input
+              type="range"
+              value={minConfidence}
+              onChange={(e) => setMinConfidence(Number(e.target.value))}
+              min={0}
+              max={100}
+              step={5}
+              className="w-full"
+            />
           </label>
           <div className="flex items-end">
             <button onClick={runScan} disabled={scanning} className="btn-primary w-full">

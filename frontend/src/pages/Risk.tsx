@@ -1,10 +1,17 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 export function Risk() {
-  const [capital, setCapital] = useState(100000);
+  const [searchParams] = useSearchParams();
+
+  const paramEntry = searchParams.get("entry_price");
+  const paramStop = searchParams.get("stop_loss");
+  const paramCapital = searchParams.get("capital");
+
+  const [capital, setCapital] = useState(paramCapital ? Number(paramCapital) : 100000);
   const [riskPercent, setRiskPercent] = useState(2);
-  const [entryPrice, setEntryPrice] = useState(0);
-  const [stopLoss, setStopLoss] = useState(0);
+  const [entryPrice, setEntryPrice] = useState(paramEntry ? Number(paramEntry) : 0);
+  const [stopLoss, setStopLoss] = useState(paramStop ? Number(paramStop) : 0);
 
   const riskAmount = capital * (riskPercent / 100);
   const riskPerShare = Math.abs(entryPrice - stopLoss);
