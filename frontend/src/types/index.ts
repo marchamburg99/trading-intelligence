@@ -74,6 +74,8 @@ export interface JournalEntry {
   entry_price: number | null;
   exit_price: number | null;
   position_size: number;
+  stop_loss: number | null;
+  take_profit: number | null;
   pnl: number | null;
   pnl_percent: number | null;
   setup_type: string;

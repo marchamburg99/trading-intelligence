@@ -32,7 +32,7 @@ interface DashboardData {
   regime: { status: string; message: string; vix: number };
   macro: { ampel: "GREEN" | "YELLOW" | "RED"; indicators: Record<string, { value: number; status: string; date: string }> };
   signals: { total: number; buy: number; sell: number; hold: number; avoid: number; buys: SignalItem[]; watch: SignalItem[]; sells: SignalItem[] };
-  products: { leveraged: (SignalItem & { product?: ProductInfo })[]; crypto: (SignalItem & { product?: ProductInfo })[]; commodities: (SignalItem & { product?: ProductInfo })[] };
+  products: { leveraged: (SignalItem & { product?: ProductInfo; effective_exposure?: number })[]; crypto: (SignalItem & { product?: ProductInfo })[]; commodities: (SignalItem & { product?: ProductInfo })[] };
   positions: { open: Position[]; unrealized_total: number; realized_total: number; total_trades: number; win_rate: number };
   indices: { symbol: string; name: string; price: number; change_1d: number; change_20d: number }[];
   sectors: { symbol: string; name: string; change_1d: number; change_20d: number }[];
@@ -275,7 +275,7 @@ export function Dashboard() {
           </div>
           <div className="space-y-3">
             {data.products.leveraged.map((s) => {
-              const p = (s as any).product as ProductInfo | undefined;
+              const p = s.product;
               return (
                 <div key={s.symbol} className="border border-leverage/10 rounded-xl p-4 bg-surface">
                   <div className="flex items-start justify-between">
@@ -297,7 +297,7 @@ export function Dashboard() {
                       </div>
                       <div className="text-[10px] text-ink-tertiary mb-2">
                         {s.position_size} Stk · Max-Loss <span className="text-loss font-semibold">${s.max_loss.toLocaleString()}</span>
-                        {p && p.leverage > 1 && <> · Exposure <span className="text-leverage font-semibold">${((s as any).effective_exposure || 0).toLocaleString()}</span></>}
+                        {p && p.leverage > 1 && <> · Exposure <span className="text-leverage font-semibold">${(s.effective_exposure || 0).toLocaleString()}</span></>}
                       </div>
                       <button onClick={() => {
                         api.journal.create({ symbol: s.symbol, trade_date: new Date().toISOString().split("T")[0], direction: p?.direction === "SHORT" ? "SHORT" : "LONG", entry_price: s.entry_price, position_size: s.position_size, stop_loss: s.stop_loss, take_profit: s.take_profit, setup_type: `Hebel ${p?.leverage}x · ${s.confidence.toFixed(0)}%`, notes: s.reasoning }).then(() => { window.location.reload(); });
@@ -321,7 +321,7 @@ export function Dashboard() {
                 <div key={s.symbol} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
                   <div>
                     <a href={`https://finance.yahoo.com/quote/${s.symbol}`} target="_blank" rel="noopener noreferrer" className="font-semibold text-ink hover:text-accent transition-colors">{s.symbol}</a>
-                    <span className="text-xs text-ink-tertiary ml-2">{(s as any).product?.name || s.name}</span>
+                    <span className="text-xs text-ink-tertiary ml-2">{s.product?.name || s.name}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="font-mono text-sm text-ink-secondary">${s.entry_price}</span>
@@ -339,7 +339,7 @@ export function Dashboard() {
                 <div key={s.symbol} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
                   <div>
                     <a href={`https://finance.yahoo.com/quote/${s.symbol}`} target="_blank" rel="noopener noreferrer" className="font-semibold text-ink hover:text-accent transition-colors">{s.symbol}</a>
-                    <span className="text-xs text-ink-tertiary ml-2">{(s as any).product?.name || s.name}</span>
+                    <span className="text-xs text-ink-tertiary ml-2">{s.product?.name || s.name}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="font-mono text-sm text-ink-secondary">${s.entry_price}</span>

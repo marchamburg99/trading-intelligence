@@ -50,8 +50,8 @@ export function Journal() {
     setEditForm({
       entry_price: e.entry_price?.toString() || "",
       position_size: e.position_size?.toString() || "",
-      stop_loss: (e as any).stop_loss?.toString() || "",
-      take_profit: (e as any).take_profit?.toString() || "",
+      stop_loss: e.stop_loss?.toString() || "",
+      take_profit: e.take_profit?.toString() || "",
       setup_type: e.setup_type || "",
       notes: e.notes || "",
       lessons: e.lessons || "",
