@@ -14,19 +14,15 @@ interface WatchlistItem {
   notes: string;
 }
 
-interface TickerDetail {
-  symbol: string;
-  name: string;
+interface TickerDetailRaw {
+  ticker: { symbol: string; name: string; sector: string };
   ohlcv: { date: string; open: number; high: number; low: number; close: number; volume: number }[];
-  rsi: number | null;
-  macd: number | null;
-  macd_signal: number | null;
-  macd_histogram: number | null;
-  macd_bullish: boolean | null;
-  ema_50: number | null;
-  ema_200: number | null;
-  above_ema200: boolean | null;
-  atr: number | null;
+  indicators: {
+    rsi_14: number | null; macd: number | null; macd_signal: number | null;
+    ema_21: number | null; ema_50: number | null; ema_200: number | null;
+    bb_upper: number | null; bb_lower: number | null; atr_14: number | null;
+    stoch_k: number | null; stoch_d: number | null;
+  } | null;
 }
 
 function Chg({ value }: { value: number | null }) {
@@ -42,8 +38,8 @@ function RsiCell({ value }: { value: number | null }) {
 }
 
 function TickerDetailPanel({ symbol, onClose }: { symbol: string; onClose: () => void }) {
-  const { data, loading, error } = useFetch<TickerDetail>(
-    () => api.tickers.detail(symbol) as Promise<TickerDetail>,
+  const { data: raw, loading, error } = useFetch<TickerDetailRaw>(
+    () => api.tickers.detail(symbol) as Promise<TickerDetailRaw>,
     [symbol]
   );
 
@@ -62,7 +58,7 @@ function TickerDetailPanel({ symbol, onClose }: { symbol: string; onClose: () =>
     );
   }
 
-  if (error || !data) {
+  if (error || !raw) {
     return (
       <div className="card">
         <div className="flex items-center justify-between mb-4">
@@ -74,58 +70,64 @@ function TickerDetailPanel({ symbol, onClose }: { symbol: string; onClose: () =>
     );
   }
 
+  const ind = raw.indicators;
+  const macdBullish = ind?.macd != null && ind?.macd_signal != null ? ind.macd > ind.macd_signal : null;
+
   return (
     <div className="card">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <h3 className="text-lg font-bold">{data.symbol}</h3>
-          {data.name && <span className="text-sm text-ink-tertiary">{data.name}</span>}
+          <a href={`https://finance.yahoo.com/quote/${raw.ticker.symbol}`} target="_blank" rel="noopener noreferrer" className="text-lg font-bold hover:text-accent transition-colors">{raw.ticker.symbol}</a>
+          {raw.ticker.name && <span className="text-sm text-ink-tertiary">{raw.ticker.name}</span>}
+          {raw.ticker.sector && <span className="text-xs bg-surface-muted text-ink-tertiary px-2 py-0.5 rounded-lg">{raw.ticker.sector}</span>}
         </div>
         <button onClick={onClose} className="text-ink-tertiary hover:text-ink text-sm">Schliessen</button>
       </div>
 
-      {data.ohlcv && data.ohlcv.length > 0 ? (
-        <CandlestickChart data={data.ohlcv} height={350} />
+      {raw.ohlcv && raw.ohlcv.length > 0 ? (
+        <CandlestickChart data={raw.ohlcv} height={350} />
       ) : (
         <p className="text-sm text-ink-tertiary py-8 text-center">Keine OHLCV-Daten verfuegbar</p>
       )}
 
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mt-4 pt-4 border-t border-border">
-        <div>
-          <div className="text-[10px] text-ink-tertiary uppercase tracking-wider">RSI</div>
-          <div className={`font-mono font-semibold ${
-            data.rsi && data.rsi < 30 ? "text-gain" : data.rsi && data.rsi > 70 ? "text-loss" : "text-ink"
-          }`}>{data.rsi?.toFixed(1) ?? "—"}</div>
+      {ind && (
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mt-4 pt-4 border-t border-border">
+          <div>
+            <div className="text-[10px] text-ink-tertiary uppercase tracking-wider">RSI</div>
+            <div className={`font-mono font-semibold ${
+              ind.rsi_14 != null && ind.rsi_14 < 30 ? "text-gain" : ind.rsi_14 != null && ind.rsi_14 > 70 ? "text-loss" : "text-ink"
+            }`}>{ind.rsi_14?.toFixed(1) ?? "—"}</div>
+          </div>
+          <div>
+            <div className="text-[10px] text-ink-tertiary uppercase tracking-wider">MACD</div>
+            <div className={`font-mono font-semibold ${
+              macdBullish === true ? "text-gain" : macdBullish === false ? "text-loss" : "text-ink"
+            }`}>{ind.macd?.toFixed(2) ?? "—"}</div>
+          </div>
+          <div>
+            <div className="text-[10px] text-ink-tertiary uppercase tracking-wider">MACD Signal</div>
+            <div className="font-mono font-semibold text-ink">{ind.macd_signal?.toFixed(2) ?? "—"}</div>
+          </div>
+          <div>
+            <div className="text-[10px] text-ink-tertiary uppercase tracking-wider">EMA 50</div>
+            <div className="font-mono font-semibold text-ink">{ind.ema_50?.toFixed(2) ?? "—"}</div>
+          </div>
+          <div>
+            <div className="text-[10px] text-ink-tertiary uppercase tracking-wider">EMA 200</div>
+            <div className="font-mono font-semibold text-ink">{ind.ema_200?.toFixed(2) ?? "—"}</div>
+          </div>
+          <div>
+            <div className="text-[10px] text-ink-tertiary uppercase tracking-wider">ATR</div>
+            <div className="font-mono font-semibold text-ink">{ind.atr_14?.toFixed(2) ?? "—"}</div>
+          </div>
+          <div>
+            <div className="text-[10px] text-ink-tertiary uppercase tracking-wider">Stochastic</div>
+            <div className={`font-mono font-semibold ${
+              ind.stoch_k != null && ind.stoch_k < 20 ? "text-gain" : ind.stoch_k != null && ind.stoch_k > 80 ? "text-loss" : "text-ink"
+            }`}>{ind.stoch_k?.toFixed(1) ?? "—"}</div>
+          </div>
         </div>
-        <div>
-          <div className="text-[10px] text-ink-tertiary uppercase tracking-wider">MACD</div>
-          <div className={`font-mono font-semibold ${
-            data.macd_bullish ? "text-gain" : data.macd_bullish === false ? "text-loss" : "text-ink"
-          }`}>{data.macd?.toFixed(2) ?? "—"}</div>
-        </div>
-        <div>
-          <div className="text-[10px] text-ink-tertiary uppercase tracking-wider">MACD Signal</div>
-          <div className="font-mono font-semibold text-ink">{data.macd_signal?.toFixed(2) ?? "—"}</div>
-        </div>
-        <div>
-          <div className="text-[10px] text-ink-tertiary uppercase tracking-wider">Histogram</div>
-          <div className={`font-mono font-semibold ${
-            data.macd_histogram && data.macd_histogram > 0 ? "text-gain" : data.macd_histogram && data.macd_histogram < 0 ? "text-loss" : "text-ink"
-          }`}>{data.macd_histogram?.toFixed(2) ?? "—"}</div>
-        </div>
-        <div>
-          <div className="text-[10px] text-ink-tertiary uppercase tracking-wider">EMA 50</div>
-          <div className="font-mono font-semibold text-ink">{data.ema_50?.toFixed(2) ?? "—"}</div>
-        </div>
-        <div>
-          <div className="text-[10px] text-ink-tertiary uppercase tracking-wider">EMA 200</div>
-          <div className="font-mono font-semibold text-ink">{data.ema_200?.toFixed(2) ?? "—"}</div>
-        </div>
-        <div>
-          <div className="text-[10px] text-ink-tertiary uppercase tracking-wider">ATR</div>
-          <div className="font-mono font-semibold text-ink">{data.atr?.toFixed(2) ?? "—"}</div>
-        </div>
-      </div>
+      )}
     </div>
   );
 }
