@@ -75,7 +75,7 @@ function TradeCard({ s, type }: { s: SignalItem; type: "buy" | "sell" | "watch" 
       direction: type === "sell" ? "SHORT" : "LONG",
       entry_price: execPrice, position_size: execShares, stop_loss: execSL, take_profit: execTP,
       setup_type: `Signal ${s.confidence.toFixed(0)}%`,
-      notes: `${s.reasoning}\n\nAusgeführt: ${now.toLocaleString("de-DE")} @ $${execPrice}`,
+      notes: `${s.reasoning}\n\nAusgeführt: ${now.toLocaleString("de-DE")} @ €${execPrice}`,
     }).then(() => { setShowExec(false); setSubmitting(false); window.location.reload(); });
   };
 
@@ -97,24 +97,24 @@ function TradeCard({ s, type }: { s: SignalItem; type: "buy" | "sell" | "watch" 
         <div className="grid grid-cols-3 gap-4 text-center">
           <div>
             <div className="text-[10px] uppercase tracking-wider text-ink-tertiary">Einstieg</div>
-            <div className="text-lg font-mono font-bold text-ink">${s.entry_price}</div>
+            <div className="text-lg font-mono font-bold text-ink">€{s.entry_price}</div>
           </div>
           <div>
             <div className="text-[10px] uppercase tracking-wider text-loss">Stop-Loss</div>
-            <div className="text-lg font-mono font-bold text-loss">${s.stop_loss}</div>
-            <div className="text-[10px] text-loss/60">-${s.risk_per_share}/Aktie</div>
+            <div className="text-lg font-mono font-bold text-loss">€{s.stop_loss}</div>
+            <div className="text-[10px] text-loss/60">-€{s.risk_per_share}/Aktie</div>
           </div>
           <div>
             <div className="text-[10px] uppercase tracking-wider text-gain">Take-Profit</div>
-            <div className="text-lg font-mono font-bold text-gain">${s.take_profit}</div>
-            <div className="text-[10px] text-gain/60">+${s.reward_per_share}/Aktie</div>
+            <div className="text-lg font-mono font-bold text-gain">€{s.take_profit}</div>
+            <div className="text-[10px] text-gain/60">+€{s.reward_per_share}/Aktie</div>
           </div>
         </div>
         <div className="border-t border-border/50 mt-3 pt-3 grid grid-cols-4 gap-3 text-center text-sm">
           <div><div className="text-[10px] text-ink-tertiary">Stück</div><div className="font-semibold text-ink">{s.position_size}</div></div>
-          <div><div className="text-[10px] text-ink-tertiary">Volumen</div><div className="font-semibold text-ink">${s.position_value.toLocaleString()}</div></div>
-          <div><div className="text-[10px] text-ink-tertiary">Max. Verlust</div><div className="font-semibold text-loss">-${s.max_loss.toLocaleString()}</div></div>
-          <div><div className="text-[10px] text-ink-tertiary">Max. Gewinn</div><div className="font-semibold text-gain">+${s.max_gain.toLocaleString()}</div></div>
+          <div><div className="text-[10px] text-ink-tertiary">Volumen</div><div className="font-semibold text-ink">€{s.position_value.toLocaleString()}</div></div>
+          <div><div className="text-[10px] text-ink-tertiary">Max. Verlust</div><div className="font-semibold text-loss">-€{s.max_loss.toLocaleString()}</div></div>
+          <div><div className="text-[10px] text-ink-tertiary">Max. Gewinn</div><div className="font-semibold text-gain">+€{s.max_gain.toLocaleString()}</div></div>
         </div>
       </div>
 
@@ -129,23 +129,23 @@ function TradeCard({ s, type }: { s: SignalItem; type: "buy" | "sell" | "watch" 
           <div className="grid grid-cols-4 gap-3">
             <label className="block"><span className="text-[10px] text-ink-tertiary block mb-1">Stückzahl</span>
               <input type="number" value={execShares} onChange={e => setExecShares(Number(e.target.value))} min={1} className="input font-mono" /></label>
-            <label className="block"><span className="text-[10px] text-ink-tertiary block mb-1">Kurs ($)</span>
+            <label className="block"><span className="text-[10px] text-ink-tertiary block mb-1">Kurs (€)</span>
               <input type="number" value={execPrice} onChange={e => setExecPrice(Number(e.target.value))} step={0.01} className="input font-mono" /></label>
-            <label className="block"><span className="text-[10px] text-loss block mb-1">Stop-Loss ($)</span>
+            <label className="block"><span className="text-[10px] text-loss block mb-1">Stop-Loss (€)</span>
               <input type="number" value={execSL} onChange={e => setExecSL(Number(e.target.value))} step={0.01} className="input font-mono" /></label>
-            <label className="block"><span className="text-[10px] text-gain block mb-1">Take-Profit ($)</span>
+            <label className="block"><span className="text-[10px] text-gain block mb-1">Take-Profit (€)</span>
               <input type="number" value={execTP} onChange={e => setExecTP(Number(e.target.value))} step={0.01} className="input font-mono" /></label>
           </div>
           <div className="flex items-center justify-between text-xs text-ink-tertiary border-t border-border pt-2">
-            <span>Volumen: <b className="text-ink">${execVolume.toLocaleString(undefined, {maximumFractionDigits: 0})}</b></span>
-            <span>Max. Verlust: <b className="text-loss">${execMaxLoss.toLocaleString(undefined, {maximumFractionDigits: 0})}</b></span>
-            <span>Max. Gewinn: <b className="text-gain">${execMaxGain.toLocaleString(undefined, {maximumFractionDigits: 0})}</b></span>
+            <span>Volumen: <b className="text-ink">€{execVolume.toLocaleString(undefined, {maximumFractionDigits: 0})}</b></span>
+            <span>Max. Verlust: <b className="text-loss">€{execMaxLoss.toLocaleString(undefined, {maximumFractionDigits: 0})}</b></span>
+            <span>Max. Gewinn: <b className="text-gain">€{execMaxGain.toLocaleString(undefined, {maximumFractionDigits: 0})}</b></span>
             <button onClick={handleSubmit} disabled={submitting || execShares <= 0}
               className={`px-5 py-2 rounded-xl font-semibold text-sm transition-all active:scale-[0.98] disabled:opacity-50 ${
                 type === "buy" ? "bg-gain text-white hover:bg-gain/90" :
                 type === "sell" ? "bg-loss text-white hover:bg-loss/90" :
                 "bg-accent text-white hover:bg-accent-hover"
-              }`}>{submitting ? "..." : `${execShares}x ${s.symbol} @ $${execPrice} bestätigen`}</button>
+              }`}>{submitting ? "..." : `${execShares}x ${s.symbol} @ €${execPrice} bestätigen`}</button>
           </div>
         </div>
       ) : (
@@ -244,7 +244,7 @@ export function Dashboard() {
                 </div>
                 <p className="text-xs text-ink-secondary mb-2">{s.reasoning}</p>
                 <div className="flex gap-4 text-xs text-ink-tertiary font-mono">
-                  <span>${s.entry_price}</span><span>SL ${s.stop_loss}</span><span>TP ${s.take_profit}</span>
+                  <span>€{s.entry_price}</span><span>SL €{s.stop_loss}</span><span>TP €{s.take_profit}</span>
                 </div>
               </div>
             ))}
@@ -291,13 +291,13 @@ export function Dashboard() {
                     </div>
                     <div className="text-right ml-6 shrink-0">
                       <div className="grid grid-cols-3 gap-3 text-center text-sm mb-2">
-                        <div><div className="text-[9px] text-ink-tertiary">Entry</div><div className="font-mono font-semibold text-ink">${s.entry_price}</div></div>
-                        <div><div className="text-[9px] text-loss">SL</div><div className="font-mono font-semibold text-loss">${s.stop_loss}</div></div>
-                        <div><div className="text-[9px] text-gain">TP</div><div className="font-mono font-semibold text-gain">${s.take_profit}</div></div>
+                        <div><div className="text-[9px] text-ink-tertiary">Entry</div><div className="font-mono font-semibold text-ink">€{s.entry_price}</div></div>
+                        <div><div className="text-[9px] text-loss">SL</div><div className="font-mono font-semibold text-loss">€{s.stop_loss}</div></div>
+                        <div><div className="text-[9px] text-gain">TP</div><div className="font-mono font-semibold text-gain">€{s.take_profit}</div></div>
                       </div>
                       <div className="text-[10px] text-ink-tertiary mb-2">
-                        {s.position_size} Stk · Max-Loss <span className="text-loss font-semibold">${s.max_loss.toLocaleString()}</span>
-                        {p && p.leverage > 1 && <> · Exposure <span className="text-leverage font-semibold">${(s.effective_exposure || 0).toLocaleString()}</span></>}
+                        {s.position_size} Stk · Max-Loss <span className="text-loss font-semibold">€{s.max_loss.toLocaleString()}</span>
+                        {p && p.leverage > 1 && <> · Exposure <span className="text-leverage font-semibold">€{(s.effective_exposure || 0).toLocaleString()}</span></>}
                       </div>
                       <button onClick={() => {
                         api.journal.create({ symbol: s.symbol, trade_date: new Date().toISOString().split("T")[0], direction: p?.direction === "SHORT" ? "SHORT" : "LONG", entry_price: s.entry_price, position_size: s.position_size, stop_loss: s.stop_loss, take_profit: s.take_profit, setup_type: `Hebel ${p?.leverage}x · ${s.confidence.toFixed(0)}%`, notes: s.reasoning }).then(() => { window.location.reload(); });
@@ -324,7 +324,7 @@ export function Dashboard() {
                     <span className="text-xs text-ink-tertiary ml-2">{s.product?.name || s.name}</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="font-mono text-sm text-ink-secondary">${s.entry_price}</span>
+                    <span className="font-mono text-sm text-ink-secondary">€{s.entry_price}</span>
                     <SignalBadge type={s.signal_type} />
                     <span className="text-sm font-semibold text-ink">{s.confidence.toFixed(0)}%</span>
                   </div>
@@ -342,7 +342,7 @@ export function Dashboard() {
                     <span className="text-xs text-ink-tertiary ml-2">{s.product?.name || s.name}</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="font-mono text-sm text-ink-secondary">${s.entry_price}</span>
+                    <span className="font-mono text-sm text-ink-secondary">€{s.entry_price}</span>
                     <SignalBadge type={s.signal_type} />
                     <span className="text-sm font-semibold text-ink">{s.confidence.toFixed(0)}%</span>
                   </div>

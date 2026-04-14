@@ -56,10 +56,10 @@ export function OpenPositions({
             <tr key={p.id} className={`border-b border-border/50 ${p.alert ? "bg-loss-bg/50" : ""}`}>
               <td className="py-2.5 font-semibold"><a href={`https://finance.yahoo.com/quote/${p.symbol}`} target="_blank" rel="noopener noreferrer" className="hover:text-accent transition-colors">{p.symbol}</a></td>
               <td className={`py-2.5 font-medium ${p.direction === "LONG" ? "text-gain" : "text-loss"}`}>{p.direction}</td>
-              <td className="py-2.5 text-right font-mono text-ink-secondary">${p.entry_price.toFixed(2)}</td>
-              <td className="py-2.5 text-right font-mono font-semibold">{p.current_price ? `$${p.current_price.toFixed(2)}` : "—"}</td>
-              <td className="py-2.5 text-right font-mono text-loss/50">{p.stop_loss ? `$${p.stop_loss.toFixed(2)}` : "—"}</td>
-              <td className="py-2.5 text-right font-mono text-gain/50">{p.take_profit ? `$${p.take_profit.toFixed(2)}` : "—"}</td>
+              <td className="py-2.5 text-right font-mono text-ink-secondary">€{p.entry_price.toFixed(2)}</td>
+              <td className="py-2.5 text-right font-mono font-semibold">{p.current_price ? `€${p.current_price.toFixed(2)}` : "—"}</td>
+              <td className="py-2.5 text-right font-mono text-loss/50">{p.stop_loss ? `€${p.stop_loss.toFixed(2)}` : "—"}</td>
+              <td className="py-2.5 text-right font-mono text-gain/50">{p.take_profit ? `€${p.take_profit.toFixed(2)}` : "—"}</td>
               <td className="py-2.5 text-right text-ink-secondary">{p.position_size}</td>
               <td className="py-2.5 text-right"><Pnl value={p.unrealized_pnl} /></td>
               <td className="py-2.5 text-right"><Pnl value={p.unrealized_pct} suffix="%" /></td>

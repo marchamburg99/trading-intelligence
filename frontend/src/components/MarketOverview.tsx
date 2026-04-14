@@ -23,7 +23,7 @@ export function MarketOverview({
         {indices.map((idx) => (
           <div key={idx.symbol} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0 text-sm">
             <span className="font-medium text-ink w-28">{idx.name}</span>
-            <span className="font-mono text-ink-secondary">${idx.price.toLocaleString()}</span>
+            <span className="font-mono text-ink-secondary">€{idx.price.toLocaleString()}</span>
             <Chg value={idx.change_1d} />
             <span className="text-[10px] text-ink-faint w-14 text-right">{idx.change_20d > 0 ? "+" : ""}{idx.change_20d}% 20d</span>
           </div>

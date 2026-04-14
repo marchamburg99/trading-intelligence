@@ -6,7 +6,7 @@ import type { JournalEntry, JournalStats } from "@/types";
 function Pnl({ value }: { value: number | null }) {
   if (value == null) return <span className="text-ink-faint">—</span>;
   const c = value > 0 ? "text-gain" : value < 0 ? "text-loss" : "text-ink-tertiary";
-  return <span className={`font-mono font-bold ${c}`}>{value > 0 ? "+" : ""}${value.toFixed(2)}</span>;
+  return <span className={`font-mono font-bold ${c}`}>{value > 0 ? "+" : ""}€{value.toFixed(2)}</span>;
 }
 
 export function Journal() {
@@ -111,11 +111,11 @@ export function Journal() {
           </div>
           <div className="card text-center">
             <p className="text-xs text-ink-tertiary">Gesamt P&L</p>
-            <p className={`text-2xl font-bold ${stats.total_pnl >= 0 ? "text-gain" : "text-loss"}`}>${stats.total_pnl.toFixed(2)}</p>
+            <p className={`text-2xl font-bold ${stats.total_pnl >= 0 ? "text-gain" : "text-loss"}`}>€{stats.total_pnl.toFixed(2)}</p>
           </div>
           <div className="card text-center">
             <p className="text-xs text-ink-tertiary">Avg P&L</p>
-            <p className={`text-2xl font-bold ${stats.avg_pnl >= 0 ? "text-gain" : "text-loss"}`}>${stats.avg_pnl.toFixed(2)}</p>
+            <p className={`text-2xl font-bold ${stats.avg_pnl >= 0 ? "text-gain" : "text-loss"}`}>€{stats.avg_pnl.toFixed(2)}</p>
           </div>
         </div>
       )}
@@ -132,13 +132,13 @@ export function Journal() {
             <label className="block"><span className="text-[10px] text-ink-tertiary block mb-0.5">Richtung</span>
               <select value={form.direction} onChange={e => setForm({ ...form, direction: e.target.value })} className="input w-full">
                 <option value="LONG">LONG</option><option value="SHORT">SHORT</option></select></label>
-            <label className="block"><span className="text-[10px] text-ink-tertiary block mb-0.5">Einstieg ($)</span>
+            <label className="block"><span className="text-[10px] text-ink-tertiary block mb-0.5">Einstieg (€)</span>
               <input value={form.entry_price} onChange={e => setForm({ ...form, entry_price: e.target.value })} type="number" step="0.01" className="input font-mono w-full" /></label>
             <label className="block"><span className="text-[10px] text-ink-tertiary block mb-0.5">Stückzahl</span>
               <input value={form.position_size} onChange={e => setForm({ ...form, position_size: e.target.value })} type="number" className="input font-mono w-full" /></label>
-            <label className="block"><span className="text-[10px] text-ink-tertiary block mb-0.5">Stop-Loss ($)</span>
+            <label className="block"><span className="text-[10px] text-ink-tertiary block mb-0.5">Stop-Loss (€)</span>
               <input value={form.stop_loss} onChange={e => setForm({ ...form, stop_loss: e.target.value })} type="number" step="0.01" className="input font-mono w-full" /></label>
-            <label className="block"><span className="text-[10px] text-ink-tertiary block mb-0.5">Take-Profit ($)</span>
+            <label className="block"><span className="text-[10px] text-ink-tertiary block mb-0.5">Take-Profit (€)</span>
               <input value={form.take_profit} onChange={e => setForm({ ...form, take_profit: e.target.value })} type="number" step="0.01" className="input font-mono w-full" /></label>
             <label className="block"><span className="text-[10px] text-ink-tertiary block mb-0.5">Setup</span>
               <input value={form.setup_type} onChange={e => setForm({ ...form, setup_type: e.target.value })} className="input w-full" /></label>
@@ -168,15 +168,15 @@ export function Journal() {
                     <label className="block"><span className="text-[10px] text-ink-tertiary block mb-0.5">Richtung</span>
                       <select value={editForm.direction} onChange={ev => setEditForm({ ...editForm, direction: ev.target.value })} className="input w-full">
                         <option value="LONG">LONG</option><option value="SHORT">SHORT</option></select></label>
-                    <label className="block"><span className="text-[10px] text-ink-tertiary block mb-0.5">Einstieg ($)</span>
+                    <label className="block"><span className="text-[10px] text-ink-tertiary block mb-0.5">Einstieg (€)</span>
                       <input value={editForm.entry_price} onChange={ev => setEditForm({ ...editForm, entry_price: ev.target.value })} type="number" step="0.01" className="input font-mono w-full" /></label>
                     <label className="block"><span className="text-[10px] text-ink-tertiary block mb-0.5">Stückzahl</span>
                       <input value={editForm.position_size} onChange={ev => setEditForm({ ...editForm, position_size: ev.target.value })} type="number" className="input font-mono w-full" /></label>
                     <label className="block"><span className="text-[10px] text-ink-tertiary block mb-0.5">Setup</span>
                       <input value={editForm.setup_type} onChange={ev => setEditForm({ ...editForm, setup_type: ev.target.value })} className="input w-full" /></label>
-                    <label className="block"><span className="text-[10px] text-loss block mb-0.5">Stop-Loss ($)</span>
+                    <label className="block"><span className="text-[10px] text-loss block mb-0.5">Stop-Loss (€)</span>
                       <input value={editForm.stop_loss} onChange={ev => setEditForm({ ...editForm, stop_loss: ev.target.value })} type="number" step="0.01" className="input font-mono w-full border-loss/30" /></label>
-                    <label className="block"><span className="text-[10px] text-gain block mb-0.5">Take-Profit ($)</span>
+                    <label className="block"><span className="text-[10px] text-gain block mb-0.5">Take-Profit (€)</span>
                       <input value={editForm.take_profit} onChange={ev => setEditForm({ ...editForm, take_profit: ev.target.value })} type="number" step="0.01" className="input font-mono w-full border-gain/30" /></label>
                   </div>
                   <label className="block"><span className="text-[10px] text-ink-tertiary block mb-0.5">Notizen</span>
@@ -189,7 +189,7 @@ export function Journal() {
                 <div className="space-y-3">
                   <h3 className="font-bold">{e.symbol} schließen</h3>
                   <div className="grid grid-cols-3 gap-3">
-                    <label className="block"><span className="text-[10px] text-ink-tertiary block mb-0.5">Ausstiegskurs ($)</span>
+                    <label className="block"><span className="text-[10px] text-ink-tertiary block mb-0.5">Ausstiegskurs (€)</span>
                       <input value={closePrice} onChange={ev => setClosePrice(ev.target.value)} type="number" step="0.01" autoFocus className="input font-mono w-full" /></label>
                     <label className="block col-span-2"><span className="text-[10px] text-ink-tertiary block mb-0.5">Was habe ich gelernt?</span>
                       <input value={closeLessons} onChange={ev => setCloseLessons(ev.target.value)} placeholder="z.B. Stop-Loss zu eng, hätte halten sollen..." className="input w-full" /></label>
@@ -224,8 +224,8 @@ export function Journal() {
 
                   <div className="grid grid-cols-3 md:grid-cols-7 gap-3 mt-3 text-sm">
                     <div><span className="text-[10px] text-ink-tertiary block">Datum</span><span className="text-ink-tertiary">{e.trade_date}</span></div>
-                    <div><span className="text-[10px] text-ink-tertiary block">Einstieg</span><span className="font-mono">${e.entry_price?.toFixed(2)}</span></div>
-                    <div><span className="text-[10px] text-ink-tertiary block">Ausstieg</span><span className="font-mono">{e.exit_price ? `$${e.exit_price.toFixed(2)}` : "—"}</span></div>
+                    <div><span className="text-[10px] text-ink-tertiary block">Einstieg</span><span className="font-mono">€{e.entry_price?.toFixed(2)}</span></div>
+                    <div><span className="text-[10px] text-ink-tertiary block">Ausstieg</span><span className="font-mono">{e.exit_price ? `€${e.exit_price.toFixed(2)}` : "—"}</span></div>
                     <div><span className="text-[10px] text-ink-tertiary block">Stück</span><span>{e.position_size}</span></div>
                     <div><span className="text-[10px] text-ink-tertiary block">P&L</span><Pnl value={e.pnl} /></div>
                     <div><span className="text-[10px] text-ink-tertiary block">P&L %</span>{e.pnl_percent != null ? <span className={`font-mono ${e.pnl_percent >= 0 ? "text-gain" : "text-loss"}`}>{e.pnl_percent > 0 ? "+" : ""}{e.pnl_percent.toFixed(2)}%</span> : "—"}</div>

@@ -24,7 +24,7 @@ export function Risk() {
         <div className="card space-y-4">
           <h2 className="text-lg font-semibold">Position Sizing</h2>
           <label className="block">
-            <span className="text-sm text-ink-tertiary block mb-1">Depot-Kapital ($)</span>
+            <span className="text-sm text-ink-tertiary block mb-1">Depot-Kapital (€)</span>
             <input
               type="number"
               value={capital}
@@ -45,7 +45,7 @@ export function Risk() {
             />
           </label>
           <label className="block">
-            <span className="text-sm text-ink-tertiary block mb-1">Einstiegspreis ($)</span>
+            <span className="text-sm text-ink-tertiary block mb-1">Einstiegspreis (€)</span>
             <input
               type="number"
               value={entryPrice || ""}
@@ -55,7 +55,7 @@ export function Risk() {
             />
           </label>
           <label className="block">
-            <span className="text-sm text-ink-tertiary block mb-1">Stop-Loss ($)</span>
+            <span className="text-sm text-ink-tertiary block mb-1">Stop-Loss (€)</span>
             <input
               type="number"
               value={stopLoss || ""}
@@ -70,11 +70,11 @@ export function Risk() {
         <div className="space-y-4">
           <div className="card">
             <p className="text-sm text-ink-tertiary">Max. Risiko-Betrag</p>
-            <p className="text-3xl font-bold font-mono text-loss">${riskAmount.toFixed(2)}</p>
+            <p className="text-3xl font-bold font-mono text-loss">€{riskAmount.toFixed(2)}</p>
           </div>
           <div className="card">
             <p className="text-sm text-ink-tertiary">Risiko pro Aktie</p>
-            <p className="text-3xl font-bold font-mono">${riskPerShare.toFixed(2)}</p>
+            <p className="text-3xl font-bold font-mono">€{riskPerShare.toFixed(2)}</p>
           </div>
           <div className="card">
             <p className="text-sm text-ink-tertiary">Position Size</p>
@@ -82,7 +82,7 @@ export function Risk() {
           </div>
           <div className="card">
             <p className="text-sm text-ink-tertiary">Positionswert</p>
-            <p className="text-3xl font-bold font-mono">${positionValue.toFixed(2)}</p>
+            <p className="text-3xl font-bold font-mono">€{positionValue.toFixed(2)}</p>
             <p className="text-sm text-ink-tertiary mt-1">{portfolioPercent.toFixed(1)}% des Depots</p>
           </div>
         </div>

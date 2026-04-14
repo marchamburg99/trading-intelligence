@@ -101,7 +101,7 @@ export function WatchlistPage() {
                   </td>
                   <td className="py-2.5 px-2 text-ink-tertiary text-xs">{item.sector || "—"}</td>
                   <td className="py-2.5 px-2 text-right font-mono font-semibold">
-                    {item.price ? `$${item.price.toFixed(2)}` : "—"}
+                    {item.price ? `€${item.price.toFixed(2)}` : "—"}
                   </td>
                   <td className="py-2.5 px-2 text-right"><Chg value={item.change_1d} /></td>
                   <td className="py-2.5 px-2 text-right"><RsiCell value={item.rsi} /></td>
@@ -116,7 +116,7 @@ export function WatchlistPage() {
                       : <span className="text-loss">✗</span>}
                   </td>
                   <td className="py-2.5 px-2 text-right font-mono text-xs text-ink-tertiary">
-                    {item.atr ? `$${item.atr}` : "—"}
+                    {item.atr ? `€${item.atr}` : "—"}
                   </td>
                   <td className="py-2.5 px-2 text-center">
                     {item.signal_type ? <SignalBadge type={item.signal_type} /> : <span className="text-ink-faint text-xs">—</span>}

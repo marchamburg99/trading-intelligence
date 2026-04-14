@@ -78,15 +78,15 @@ export function Signals() {
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4 text-sm">
                 <div>
                   <p className="text-ink-tertiary">Einstieg</p>
-                  <p className="font-semibold font-mono">${s.entry_price?.toFixed(2) ?? "—"}</p>
+                  <p className="font-semibold font-mono">€{s.entry_price?.toFixed(2) ?? "—"}</p>
                 </div>
                 <div>
                   <p className="text-ink-tertiary">Stop-Loss</p>
-                  <p className="font-semibold font-mono text-loss">${s.stop_loss?.toFixed(2) ?? "—"}</p>
+                  <p className="font-semibold font-mono text-loss">€{s.stop_loss?.toFixed(2) ?? "—"}</p>
                 </div>
                 <div>
                   <p className="text-ink-tertiary">Take-Profit</p>
-                  <p className="font-semibold font-mono text-gain">${s.take_profit?.toFixed(2) ?? "—"}</p>
+                  <p className="font-semibold font-mono text-gain">€{s.take_profit?.toFixed(2) ?? "—"}</p>
                 </div>
                 <div>
                   <p className="text-ink-tertiary">R:R</p>

@@ -35,7 +35,7 @@ export function HedgeFunds() {
                 <p className="font-bold text-lg">{c.symbol}</p>
                 <p className="text-sm text-gain">{c.fund_count} Fonds kaufen</p>
                 {c.total_value && (
-                  <p className="text-xs text-ink-tertiary">${(c.total_value / 1000).toFixed(0)}M</p>
+                  <p className="text-xs text-ink-tertiary">€{(c.total_value / 1000).toFixed(0)}M</p>
                 )}
               </div>
             ))}
@@ -64,7 +64,7 @@ export function HedgeFunds() {
                   <td className="py-3 font-semibold">{f.fund_name}</td>
                   <td className="py-3 text-ink-tertiary">{f.filing_date}</td>
                   <td className="py-3 font-mono">
-                    {f.total_value ? `$${(f.total_value / 1e6).toFixed(0)}M` : "—"}
+                    {f.total_value ? `€${(f.total_value / 1e6).toFixed(0)}M` : "—"}
                   </td>
                   <td className="py-3 font-mono">{f.position_count}</td>
                 </tr>
