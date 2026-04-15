@@ -10,48 +10,10 @@ from core.models import (
     Signal, Ticker, OHLCVData, Indicator, MacroData,
     SentimentScore, Watchlist, SignalType, JournalEntry,
 )
-
-# Leveraged Products Registry
-LEVERAGED_PRODUCTS = {
-    # 3x Long
-    "TQQQ": {"leverage": 3, "direction": "LONG", "underlying": "QQQ", "name": "3x Nasdaq 100"},
-    "SPXL": {"leverage": 3, "direction": "LONG", "underlying": "SPY", "name": "3x S&P 500"},
-    "UPRO": {"leverage": 3, "direction": "LONG", "underlying": "SPY", "name": "3x S&P 500"},
-    "SOXL": {"leverage": 3, "direction": "LONG", "underlying": "SOXX", "name": "3x Semiconductors"},
-    "TNA":  {"leverage": 3, "direction": "LONG", "underlying": "IWM", "name": "3x Russell 2000"},
-    "FAS":  {"leverage": 3, "direction": "LONG", "underlying": "XLF", "name": "3x Financials"},
-    "LABU": {"leverage": 3, "direction": "LONG", "underlying": "XBI", "name": "3x Biotech"},
-    "NUGT": {"leverage": 2, "direction": "LONG", "underlying": "GDX", "name": "2x Gold Miners"},
-    "JNUG": {"leverage": 2, "direction": "LONG", "underlying": "GDXJ", "name": "2x Jr. Gold Miners"},
-    "BOIL": {"leverage": 2, "direction": "LONG", "underlying": "UNG", "name": "2x Natural Gas"},
-    # 3x Short / Inverse
-    "SQQQ": {"leverage": 3, "direction": "SHORT", "underlying": "QQQ", "name": "3x Inverse Nasdaq"},
-    "SPXS": {"leverage": 3, "direction": "SHORT", "underlying": "SPY", "name": "3x Inverse S&P 500"},
-    "SOXS": {"leverage": 3, "direction": "SHORT", "underlying": "SOXX", "name": "3x Inverse Semis"},
-    "TZA":  {"leverage": 3, "direction": "SHORT", "underlying": "IWM", "name": "3x Inverse Russell"},
-    "FAZ":  {"leverage": 3, "direction": "SHORT", "underlying": "XLF", "name": "3x Inverse Financials"},
-    "KOLD": {"leverage": 2, "direction": "SHORT", "underlying": "UNG", "name": "2x Inverse Gas"},
-    # Volatility
-    "UVXY": {"leverage": 1.5, "direction": "LONG", "underlying": "VIX", "name": "1.5x VIX"},
-    "SVXY": {"leverage": 0.5, "direction": "SHORT", "underlying": "VIX", "name": "0.5x Inverse VIX"},
-}
-
-CRYPTO_ETFS = {"IBIT": "Bitcoin ETF", "ETHA": "Ethereum ETF"}
-COMMODITY_ETFS = {"USO": "Crude Oil", "COPX": "Copper Miners", "UNG": "Natural Gas", "DBA": "Agriculture"}
-
-
-def _is_leveraged(symbol: str) -> bool:
-    return symbol in LEVERAGED_PRODUCTS
-
-
-def _get_product_info(symbol: str) -> dict | None:
-    if symbol in LEVERAGED_PRODUCTS:
-        return {**LEVERAGED_PRODUCTS[symbol], "type": "leveraged"}
-    if symbol in CRYPTO_ETFS:
-        return {"leverage": 1, "direction": "LONG", "name": CRYPTO_ETFS[symbol], "type": "crypto"}
-    if symbol in COMMODITY_ETFS:
-        return {"leverage": 1, "direction": "LONG", "name": COMMODITY_ETFS[symbol], "type": "commodity"}
-    return None
+from core.products import (
+    LEVERAGED_PRODUCTS, CRYPTO_ETFS, COMMODITY_ETFS, ALL_SPECIAL_SYMBOLS,
+    is_leveraged, get_leverage, get_product_info,
+)
 
 
 router = APIRouter()
@@ -67,8 +29,8 @@ def _serialize_signal(s, capital=100000.0, fx_rates=None):
     reward_per_share = abs(tp - entry) if tp and entry else 0
 
     symbol = s.ticker.symbol
-    product_info = _get_product_info(symbol)
-    is_lev = _is_leveraged(symbol)
+    product_info = get_product_info(symbol)
+    is_lev = is_leveraged(symbol)
 
     risk_pct = 0.01 if is_lev else 0.02
     max_position_pct = 0.10 if is_lev else 0.20  # Max 20% vom Kapital pro Position (10% bei Hebel)
@@ -130,6 +92,7 @@ def _serialize_signal(s, capital=100000.0, fx_rates=None):
         "fundamental_score": s.fundamental_score,
         "sentiment_score": s.sentiment_score_val,
         "macro_score": s.macro_score,
+        "data_quality": s.data_quality,
     }
 
     if product_info:
@@ -199,15 +162,14 @@ def trading_desk(db: Session = Depends(get_db)):
 
     # Aufteilen: Normal vs. Leveraged/Crypto/Commodity
     leveraged_symbols = set(LEVERAGED_PRODUCTS.keys())
-    special_symbols = leveraged_symbols | set(CRYPTO_ETFS.keys()) | set(COMMODITY_ETFS.keys())
 
-    normal_signals = [s for s in all_signals if s.ticker.symbol not in special_symbols]
-    product_signals = [s for s in all_signals if s.ticker.symbol in special_symbols]
+    normal_signals = [s for s in all_signals if s.ticker.symbol not in ALL_SPECIAL_SYMBOLS]
+    product_signals = [s for s in all_signals if s.ticker.symbol in ALL_SPECIAL_SYMBOLS]
 
     buy_signals = [s for s in normal_signals if s.signal_type == SignalType.BUY]
     sell_signals = [s for s in normal_signals if s.signal_type == SignalType.SELL]
 
-    # Watch: HOLD-Signale sortiert nach Konfidenz × Gewinnpotenzial (volumenbereinigt)
+    # Watch: HOLD-Signale sortiert nach risikoadjustiertem Score
     hold_candidates = [s for s in all_signals if s.signal_type == SignalType.HOLD and s.confidence >= 55]
     def _effective_score(s):
         entry = float(s.entry_price) if s.entry_price else 0
@@ -215,17 +177,12 @@ def trading_desk(db: Session = Depends(get_db)):
         sl = float(s.stop_loss) if s.stop_loss else 0
         if entry <= 0:
             return s.confidence
-        risk_per_share = abs(entry - sl)
-        reward_per_share = abs(tp - entry)
-        # Max Stueck unter Volumen-Cap (20% Kapital)
-        max_shares = min(
-            int((_capital * 0.02) / risk_per_share) if risk_per_share > 0 else 0,
-            int((_capital * 0.20) / entry),
-        )
-        max_gain_pct = (reward_per_share * max_shares / _capital * 100) if _capital > 0 else 0
-        # Score: 70% Konfidenz + 30% Gewinnpotenzial (normalisiert auf 0-100)
-        gain_score = min(100, max_gain_pct * 20)  # 5% Gewinn = Score 100
-        return s.confidence * 0.7 + gain_score * 0.3
+        reward_pct = abs(tp - entry) / entry * 100
+        risk_pct = abs(entry - sl) / entry * 100
+        rr = reward_pct / risk_pct if risk_pct > 0 else 1.0
+        risk_penalty = (s.risk_rating or 3) / 5.0
+        dq_bonus = (s.data_quality or 0.5) * 10
+        return s.confidence * min(rr, 3.0) / 3.0 * (1 - risk_penalty * 0.3) + dq_bonus
     hold_candidates.sort(key=_effective_score, reverse=True)
     strong_holds = hold_candidates[:8]
 

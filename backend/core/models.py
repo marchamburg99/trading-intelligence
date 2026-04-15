@@ -117,6 +117,7 @@ class Signal(Base):
     fundamental_score = Column(Float)
     sentiment_score_val = Column(Float)
     macro_score = Column(Float)
+    data_quality = Column(Float)  # 0-1: Anteil verfuegbarer Datenfaktoren
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, server_default=func.now())
 
