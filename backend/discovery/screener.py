@@ -357,7 +357,7 @@ def run_discovery_pipeline(db: Session) -> list[DiscoverySuggestion]:
     """Hauptpipeline: Trichter von Universum zu Top-20 Vorschlaegen."""
     # Watchlist-Symbole ausschliessen (die werden schon analysiert)
     watchlist_syms = {
-        t.symbol for (t,) in db.query(Ticker.symbol).join(Watchlist).all()
+        row[0] for row in db.query(Ticker.symbol).join(Watchlist).all()
     }
 
     # Stage 1: Hedge-Fund-Clustering
@@ -394,7 +394,8 @@ def run_discovery_pipeline(db: Session) -> list[DiscoverySuggestion]:
         ta_data = ta_results.get(sym)
 
         # Mindestens eine Datenquelle muss vorhanden sein
-        if not hf_data and not ta_data:
+        is_sector_candidate = sym in sector_candidates
+        if not hf_data and not ta_data and not is_sector_candidate:
             continue
 
         hf_score = hf_data["hedge_fund_score"] if hf_data else 50.0
@@ -421,20 +422,22 @@ def run_discovery_pipeline(db: Session) -> list[DiscoverySuggestion]:
         composite = (hf_score * 0.40) + (tech_score * 0.40) + (sec_score * 0.20)
 
         # Source bestimmen
-        if hf_data and hf_data["fund_count"] >= 3 and tech_score >= 60:
+        if hf_data and hf_data["fund_count"] >= 3 and ta_data and tech_score >= 60:
             source = "combined"
         elif hf_data and hf_data["fund_count"] >= 3:
             source = "hedge_fund_cluster"
-        elif tech_score >= 60 and sec_momentum and sec_momentum > 3:
+        elif sec_momentum and sec_momentum > 3:
             source = "sector_momentum"
-        else:
+        elif ta_data and tech_score >= 60:
             source = "technical_setup"
+        else:
+            source = "sector_momentum" if is_sector_candidate else "technical_setup"
 
         reason = _build_reason(sym, hf_data, ta_data, sector_name, sec_momentum)
 
         suggestions.append(DiscoverySuggestion(
             symbol=sym,
-            name=ta_data.get("name") or (hf_data["name"] if hf_data else None),
+            name=(ta_data.get("name") if ta_data else None) or (hf_data["name"] if hf_data else None),
             sector=sector_name,
             discovery_score=round(composite, 1),
             hedge_fund_score=round(hf_score, 1),
