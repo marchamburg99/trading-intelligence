@@ -564,9 +564,14 @@ def generate_signal(symbol: str, db: Session, capital: float = 100000.0) -> Sign
     kelly_full = (win_prob * rr_ratio - (1 - win_prob)) / rr_ratio if rr_ratio > 0 else 0
     kelly_fraction = max(0, kelly_full * 0.5)  # 50% Kelly
 
-    # Cap bei 3% des Portfolios
+    # Cap bei 3% des Portfolios (Risiko)
     max_risk_pct = min(kelly_fraction, 0.03)
     position_size = (capital * max_risk_pct) / risk_per_share if risk_per_share > 0 else 0
+
+    # Volumen-Cap: Position darf max 20% des Kapitals nicht ueberschreiten
+    if close > 0 and position_size > 0:
+        max_shares = (capital * 0.20) / close
+        position_size = min(position_size, max_shares)
 
     # Risk-Rating
     if confidence >= 75:

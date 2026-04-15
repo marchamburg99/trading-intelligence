@@ -71,10 +71,17 @@ def _serialize_signal(s, capital=100000.0, fx_rates=None):
     is_lev = _is_leveraged(symbol)
 
     risk_pct = 0.01 if is_lev else 0.02
+    max_position_pct = 0.10 if is_lev else 0.20  # Max 20% vom Kapital pro Position (10% bei Hebel)
+
     if risk_per_share > 0:
         adjusted_size = int((capital * risk_pct) / risk_per_share)
     else:
         adjusted_size = int(s.position_size) if s.position_size else 0
+
+    # Volumen-Cap: Position darf max_position_pct des Kapitals nicht ueberschreiten
+    if entry > 0 and adjusted_size > 0:
+        max_shares = int((capital * max_position_pct) / entry)
+        adjusted_size = min(adjusted_size, max(1, max_shares))
 
     leverage = product_info["leverage"] if product_info else 1
     effective_exposure = round(entry * adjusted_size * leverage, 2)
