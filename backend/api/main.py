@@ -15,6 +15,7 @@ from api.routes import (
     scanner,
     dashboard,
     quotes,
+    discovery,
 )
 
 app = FastAPI(
@@ -53,6 +54,7 @@ app.include_router(ai_analysis.router, prefix="/api/analyze", tags=["AI Analysis
 app.include_router(scanner.router, prefix="/api/scanner", tags=["Scanner"])
 app.include_router(dashboard.router, prefix="/api/dashboard", tags=["Dashboard"])
 app.include_router(quotes.router, prefix="/api/quotes", tags=["Quotes"])
+app.include_router(discovery.router, prefix="/api/discovery", tags=["Discovery"])
 
 
 @app.get("/api/health")

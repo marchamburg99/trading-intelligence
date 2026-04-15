@@ -1,6 +1,7 @@
 import { Outlet, NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
+  Compass,
   Search,
   Building2,
   FileText,
@@ -13,6 +14,7 @@ import {
 
 const NAV_ITEMS = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/discovery", label: "Discovery", icon: Compass },
   { to: "/scanner", label: "Scanner", icon: Search },
   { to: "/hedgefunds", label: "Hedge Funds", icon: Building2 },
   { to: "/papers", label: "Research", icon: FileText },

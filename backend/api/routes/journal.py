@@ -6,7 +6,8 @@ from typing import Optional
 from datetime import date, datetime
 
 from core.database import get_db
-from core.models import JournalEntry
+from core.models import JournalEntry, PortfolioSettings
+from core.portfolio import get_portfolio_settings, get_current_capital
 
 router = APIRouter()
 
@@ -154,8 +155,9 @@ def get_performance(db: Session = Depends(get_db)):
     if not closed:
         return {"equity_curve": [], "monthly": [], "by_setup": []}
 
-    # Equity-Kurve
-    equity = 100000.0  # Start-Kapital
+    # Equity-Kurve — echtes Startkapital
+    settings = get_portfolio_settings(db)
+    equity = float(settings.initial_capital)
     curve = [{"date": closed[0].trade_date.isoformat(), "equity": equity}]
     peak = equity
     max_dd = 0.0
@@ -236,3 +238,45 @@ def get_journal_stats(db: Session = Depends(get_db)):
         "best_trade": max((float(e.pnl) for e in closed if e.pnl), default=0),
         "worst_trade": min((float(e.pnl) for e in closed if e.pnl), default=0),
     }
+
+
+class PortfolioUpdate(BaseModel):
+    initial_capital: float
+
+
+@router.get("/portfolio")
+def get_portfolio(db: Session = Depends(get_db)):
+    """Aktuelles Portfolio-Kapital: Startkapital + realisierte P&L."""
+    settings = get_portfolio_settings(db)
+    current = get_current_capital(db)
+
+    closed = db.query(JournalEntry).filter(JournalEntry.is_closed == True).all()
+    realized_pnl = sum(float(e.pnl) for e in closed if e.pnl)
+
+    open_trades = db.query(JournalEntry).filter(JournalEntry.is_closed == False).all()
+    invested = sum(
+        float(e.entry_price) * (e.position_size or 0)
+        for e in open_trades if e.entry_price
+    )
+
+    return {
+        "initial_capital": float(settings.initial_capital),
+        "realized_pnl": round(realized_pnl, 2),
+        "current_capital": current,
+        "invested": round(invested, 2),
+        "available": round(current - invested, 2),
+        "currency": settings.currency,
+    }
+
+
+@router.put("/portfolio")
+def update_portfolio(data: PortfolioUpdate, db: Session = Depends(get_db)):
+    """Startkapital setzen/aktualisieren."""
+    if data.initial_capital <= 0:
+        raise HTTPException(400, "Startkapital muss positiv sein")
+
+    settings = get_portfolio_settings(db)
+    settings.initial_capital = data.initial_capital
+    db.commit()
+
+    return {"status": "updated", "initial_capital": data.initial_capital}

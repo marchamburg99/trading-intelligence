@@ -37,9 +37,20 @@ function RsiCell({ value }: { value: number | null }) {
   return <span className={`font-mono text-sm ${c}`}>{value.toFixed(1)}</span>;
 }
 
+interface SignalData {
+  symbol: string; signal_type: string; confidence: number;
+  entry_price: number; stop_loss: number; take_profit: number;
+  risk_reward_ratio: number; position_size: number; reasoning: string;
+  risk_rating: number; expected_hold_days: number;
+}
+
 function TickerDetailPanel({ symbol, onClose }: { symbol: string; onClose: () => void }) {
   const { data: raw, loading, error } = useFetch<TickerDetailRaw>(
     () => api.tickers.detail(symbol) as Promise<TickerDetailRaw>,
+    [symbol]
+  );
+  const { data: signal } = useFetch<SignalData>(
+    () => api.signals.forSymbol(symbol) as Promise<SignalData>,
     [symbol]
   );
 
@@ -126,6 +137,49 @@ function TickerDetailPanel({ symbol, onClose }: { symbol: string; onClose: () =>
               ind.stoch_k != null && ind.stoch_k < 20 ? "text-gain" : ind.stoch_k != null && ind.stoch_k > 80 ? "text-loss" : "text-ink"
             }`}>{ind.stoch_k?.toFixed(1) ?? "—"}</div>
           </div>
+        </div>
+      )}
+
+      {signal && (
+        <div className={`mt-4 pt-4 border-t border-border`}>
+          <div className="flex items-center gap-3 mb-3">
+            <h4 className="text-sm font-semibold text-ink">Trading-Signal</h4>
+            <SignalBadge type={signal.signal_type as SignalType} />
+            <span className={`text-sm font-bold ${
+              signal.confidence >= 68 ? "text-gain" : signal.confidence >= 50 ? "text-accent" : "text-ink-secondary"
+            }`}>{signal.confidence.toFixed(0)}% Konfidenz</span>
+          </div>
+          <div className="bg-surface-muted rounded-xl p-4 mb-3 border border-border/50">
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div>
+                <div className="text-[10px] uppercase tracking-wider text-ink-tertiary">Einstieg</div>
+                <div className="text-lg font-bold font-mono">${signal.entry_price.toFixed(2)}</div>
+              </div>
+              <div>
+                <div className="text-[10px] uppercase tracking-wider text-loss">Stop-Loss</div>
+                <div className="text-lg font-bold font-mono text-loss">${signal.stop_loss.toFixed(2)}</div>
+              </div>
+              <div>
+                <div className="text-[10px] uppercase tracking-wider text-gain">Take-Profit</div>
+                <div className="text-lg font-bold font-mono text-gain">${signal.take_profit.toFixed(2)}</div>
+              </div>
+            </div>
+            <div className="border-t border-border/50 mt-3 pt-3 grid grid-cols-3 gap-4 text-center text-sm">
+              <div>
+                <div className="text-[10px] text-ink-tertiary">R:R</div>
+                <div className="font-semibold text-ink">{signal.risk_reward_ratio?.toFixed(1) ?? "—"}:1</div>
+              </div>
+              <div>
+                <div className="text-[10px] text-ink-tertiary">Stueck</div>
+                <div className="font-semibold text-ink">{signal.position_size?.toFixed(0) ?? "—"}</div>
+              </div>
+              <div>
+                <div className="text-[10px] text-ink-tertiary">Haltedauer</div>
+                <div className="font-semibold text-ink">{signal.expected_hold_days ?? "—"}d</div>
+              </div>
+            </div>
+          </div>
+          <p className="text-sm text-ink-secondary leading-relaxed">{signal.reasoning}</p>
         </div>
       )}
     </div>
@@ -221,8 +275,8 @@ export function WatchlistPage() {
                   onClick={() => handleSelectSymbol(item.symbol)}
                 >
                   <td className="py-2.5 px-4">
-                    <span className={`font-bold transition-colors ${selectedSymbol === item.symbol ? "text-accent" : "text-ink hover:text-accent"}`}>{item.symbol}</span>
-                    {item.name && <span className="text-ink-tertiary text-xs ml-1.5 hidden lg:inline">{item.name}</span>}
+                    <a href={`https://finance.yahoo.com/quote/${item.symbol}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className={`font-bold transition-colors ${selectedSymbol === item.symbol ? "text-accent" : "text-ink hover:text-accent"}`}>{item.symbol}</a>
+                    {item.name && <a href={`https://finance.yahoo.com/quote/${item.symbol}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-ink-tertiary hover:text-accent text-xs ml-1.5 hidden lg:inline transition-colors">{item.name}</a>}
                   </td>
                   <td className="py-2.5 px-2 text-ink-tertiary text-xs hidden md:table-cell">{item.sector || "—"}</td>
                   <td className="py-2.5 px-2 text-right font-mono font-semibold">

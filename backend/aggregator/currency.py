@@ -57,7 +57,10 @@ def get_exchange_rate(from_currency: str) -> float | None:
     cache_key = f"fx:{from_currency}_EUR"
     cached = redis_client.get(cache_key)
     if cached:
-        return float(cached)
+        val = cached.decode() if isinstance(cached, bytes) else str(cached)
+        if val == "FAILED":
+            return None
+        return float(val)
 
     pair = FOREX_TO_EUR.get(from_currency)
     if not pair:
@@ -67,12 +70,13 @@ def get_exchange_rate(from_currency: str) -> float | None:
         ticker = yf.Ticker(pair)
         rate = ticker.fast_info.get("lastPrice")
         if rate and rate > 0:
-            # EURUSD=X gibt "1 EUR = X USD" → um USD→EUR: Preis / Rate
             redis_client.setex(cache_key, CACHE_TTL, str(rate))
             return float(rate)
     except Exception as e:
         logger.warning("exchange_rate_fetch_failed", pair=pair, error=str(e))
 
+    # Negative cache: fehlgeschlagene Lookups 5 Min nicht wiederholen
+    redis_client.setex(cache_key, 300, "FAILED")
     return None
 
 
