@@ -57,8 +57,8 @@ def _get_product_info(symbol: str) -> dict | None:
 router = APIRouter()
 
 
-def _serialize_signal(s, capital=100000.0):
-    from aggregator.currency import get_ticker_currency, convert_to_eur, get_currency_symbol
+def _serialize_signal(s, capital=100000.0, fx_rates=None):
+    from aggregator.currency import get_ticker_currency, get_exchange_rate, get_currency_symbol
 
     entry = float(s.entry_price) if s.entry_price else 0
     sl = float(s.stop_loss) if s.stop_loss else 0
@@ -79,12 +79,20 @@ def _serialize_signal(s, capital=100000.0):
     leverage = product_info["leverage"] if product_info else 1
     effective_exposure = round(entry * adjusted_size * leverage, 2)
 
-    # Währung + EUR-Umrechnung
+    # Währung + EUR-Umrechnung (Rate aus Cache oder einmal holen)
     ccy = get_ticker_currency(symbol)
     ccy_symbol = get_currency_symbol(ccy)
-    entry_eur = convert_to_eur(entry, ccy) if ccy != "EUR" else None
-    sl_eur = convert_to_eur(sl, ccy) if ccy != "EUR" and sl else None
-    tp_eur = convert_to_eur(tp, ccy) if ccy != "EUR" and tp else None
+    entry_eur = sl_eur = tp_eur = None
+    if ccy != "EUR":
+        if fx_rates is None:
+            fx_rates = {}
+        if ccy not in fx_rates:
+            fx_rates[ccy] = get_exchange_rate(ccy)
+        rate = fx_rates[ccy]
+        if rate and rate > 0:
+            entry_eur = round(entry / rate, 2) if entry else None
+            sl_eur = round(sl / rate, 2) if sl else None
+            tp_eur = round(tp / rate, 2) if tp else None
 
     result = {
         "symbol": symbol,
@@ -467,6 +475,9 @@ def trading_desk(db: Session = Depends(get_db)):
     if vix_val > 25 and lev_buys:
         briefing_points.append(f"🚫 VIX > 25 — Hebelprodukte NICHT empfohlen bei erhöhter Vola")
 
+    # Shared FX-Rate Cache fuer alle Signal-Serialisierungen (1 Lookup pro Waehrung)
+    _fx = {}
+
     # === DISCOVERY: Top-5 Vorschläge ===
     from core.models import DiscoverySuggestion
     top_discoveries = (
@@ -486,14 +497,14 @@ def trading_desk(db: Session = Depends(get_db)):
             "sell": signal_counts.get(SignalType.SELL, 0),
             "hold": signal_counts.get(SignalType.HOLD, 0),
             "avoid": signal_counts.get(SignalType.AVOID, 0),
-            "buys": [_serialize_signal(s) for s in buy_signals],
-            "watch": [_serialize_signal(s) for s in strong_holds],
-            "sells": [_serialize_signal(s) for s in sell_signals],
+            "buys": [_serialize_signal(s, fx_rates=_fx) for s in buy_signals],
+            "watch": [_serialize_signal(s, fx_rates=_fx) for s in strong_holds],
+            "sells": [_serialize_signal(s, fx_rates=_fx) for s in sell_signals],
         },
         "products": {
-            "leveraged": [_serialize_signal(s) for s in lev_buys[:8]],
-            "crypto": [_serialize_signal(s) for s in crypto_signals],
-            "commodities": [_serialize_signal(s) for s in commodity_signals],
+            "leveraged": [_serialize_signal(s, fx_rates=_fx) for s in lev_buys[:8]],
+            "crypto": [_serialize_signal(s, fx_rates=_fx) for s in crypto_signals],
+            "commodities": [_serialize_signal(s, fx_rates=_fx) for s in commodity_signals],
         },
         "positions": {
             "open": positions,

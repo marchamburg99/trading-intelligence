@@ -103,7 +103,10 @@ def get_realtime_quote(symbol: str, priority: bool = False) -> dict | None:
     cache_key = f"quote:{symbol}"
     cached = redis_client.get(cache_key)
     if cached:
-        return json.loads(cached)
+        val = cached.decode() if isinstance(cached, bytes) else str(cached)
+        if val == "FAILED":
+            return None
+        return json.loads(val)
 
     quote = None
     if priority:
@@ -114,6 +117,9 @@ def get_realtime_quote(symbol: str, priority: bool = False) -> dict | None:
 
     if quote:
         redis_client.setex(cache_key, CACHE_TTL, json.dumps(quote))
+    else:
+        # Negative cache: fehlgeschlagene Lookups 2 Min nicht wiederholen
+        redis_client.setex(cache_key, 120, "FAILED")
 
     return quote
 
