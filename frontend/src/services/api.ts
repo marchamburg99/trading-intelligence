@@ -100,6 +100,17 @@ export const api = {
   dashboard: {
     overview: () => fetchJSON("/dashboard/overview"),
   },
+  portfolioCheck: {
+    check: (positions: { symbol: string; shares: number; entry_price: number }[]) =>
+      postJSON("/portfolio-check/check", { positions }),
+    uploadCsv: async (file: File) => {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch("/api/portfolio-check/check/csv", { method: "POST", body: form });
+      if (!res.ok) throw new Error(`API error: ${res.status}`);
+      return res.json();
+    },
+  },
   discovery: {
     suggestions: (params?: string) => fetchJSON(`/discovery/suggestions${params ? `?${params}` : ""}`),
     addToWatchlist: (symbol: string) => postJSON(`/discovery/suggestions/${symbol}/add-to-watchlist`, {}),
