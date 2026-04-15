@@ -1,7 +1,8 @@
 """Trading Desk API — alles was ein Trader auf einen Blick braucht."""
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from sqlalchemy import desc, func, case
+from sqlalchemy import and_, desc, func, case
 from datetime import date
 
 from core.database import get_db
@@ -126,16 +127,29 @@ def _serialize_signal(s, capital=100000.0):
 def trading_desk(db: Session = Depends(get_db)):
     """Komplettes Trading-Desk in einem Call."""
 
-    # === MAKRO-KONTEXT ===
+    # === MAKRO-KONTEXT (Batch-Query) ===
+    macro_indicators = ["VIX", "FED_FUNDS", "YIELD_SPREAD", "CPI", "NFP"]
+    macro_subq = (
+        db.query(MacroData.indicator, func.max(MacroData.date).label("max_date"))
+        .filter(MacroData.indicator.in_(macro_indicators))
+        .group_by(MacroData.indicator)
+        .subquery()
+    )
+    macro_rows = (
+        db.query(MacroData)
+        .join(macro_subq, and_(
+            MacroData.indicator == macro_subq.c.indicator,
+            MacroData.date == macro_subq.c.max_date,
+        ))
+        .all()
+    )
     macro = {}
-    for ind in ["VIX", "FED_FUNDS", "YIELD_SPREAD", "CPI", "NFP"]:
-        latest = db.query(MacroData).filter(MacroData.indicator == ind).order_by(desc(MacroData.date)).first()
-        if latest:
-            macro[ind] = {
-                "value": round(latest.value, 2),
-                "status": latest.status.value if latest.status else "YELLOW",
-                "date": latest.date.isoformat(),
-            }
+    for row in macro_rows:
+        macro[row.indicator] = {
+            "value": round(row.value, 2),
+            "status": row.status.value if row.status else "YELLOW",
+            "date": row.date.isoformat(),
+        }
 
     statuses = [v["status"] for v in macro.values()]
     red = statuses.count("RED")
@@ -191,20 +205,51 @@ def trading_desk(db: Session = Depends(get_db)):
     # === OFFENE POSITIONEN (aus Journal) — mit Realtime-Kursen ===
     from aggregator.realtime import get_realtime_quote
     open_trades = db.query(JournalEntry).filter(JournalEntry.is_closed == False).all()
+
+    # Alle benötigten Realtime-Quotes parallel holen
+    position_symbols = list({t.symbol for t in open_trades})
+    index_symbols = list({"SPY", "QQQ", "IWM", "DIA", "VGK", "EEM"})
+    all_rt_symbols = list(set(position_symbols + index_symbols))
+
+    rt_quotes = {}
+    if all_rt_symbols:
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            futures = {
+                pool.submit(get_realtime_quote, sym, sym in position_symbols): sym
+                for sym in all_rt_symbols
+            }
+            for future in as_completed(futures):
+                sym = futures[future]
+                try:
+                    result = future.result()
+                    if result:
+                        rt_quotes[sym] = result
+                except Exception:
+                    pass
+
+    # Fallback-Preise für Positionen ohne Realtime-Kurs: Batch-Query
+    missing_syms = [s for s in position_symbols if s not in rt_quotes]
+    fallback_prices = {}
+    if missing_syms:
+        fallback_tickers = db.query(Ticker).filter(Ticker.symbol.in_(missing_syms)).all()
+        fb_ticker_ids = {t.id: t.symbol for t in fallback_tickers}
+        if fb_ticker_ids:
+            from sqlalchemy.orm import aliased
+            latest_ohlcv = (
+                db.query(OHLCVData.ticker_id, OHLCVData.close)
+                .filter(OHLCVData.ticker_id.in_(fb_ticker_ids.keys()))
+                .order_by(OHLCVData.ticker_id, desc(OHLCVData.date))
+                .distinct(OHLCVData.ticker_id)
+                .all()
+            )
+            for tid, close in latest_ohlcv:
+                fallback_prices[fb_ticker_ids[tid]] = round(float(close), 2)
+
     positions = []
     total_unrealized = 0.0
     for trade in open_trades:
-        # Realtime-Kurs (Priority für offene Positionen)
-        rt = get_realtime_quote(trade.symbol, priority=True)
-        if rt:
-            current_price = rt["price"]
-        else:
-            ticker = db.query(Ticker).filter(Ticker.symbol == trade.symbol).first()
-            current_price = None
-            if ticker:
-                last = db.query(OHLCVData).filter(OHLCVData.ticker_id == ticker.id).order_by(desc(OHLCVData.date)).first()
-                if last:
-                    current_price = round(float(last.close), 2)
+        rt = rt_quotes.get(trade.symbol)
+        current_price = rt["price"] if rt else fallback_prices.get(trade.symbol)
 
         entry = float(trade.entry_price) if trade.entry_price else 0
         size = trade.position_size or 0
@@ -217,7 +262,6 @@ def trading_desk(db: Session = Depends(get_db)):
             unrealized_pct = round(((current_price - entry) / entry) * 100 * multiplier, 2)
             total_unrealized += unrealized_pnl
 
-        # Check ob SL oder TP nah
         sl = float(trade.stop_loss) if trade.stop_loss else None
         tp = float(trade.take_profit) if trade.take_profit else None
         alert = None
@@ -249,19 +293,38 @@ def trading_desk(db: Session = Depends(get_db)):
     total_realized = sum(float(e.pnl) for e in closed if e.pnl)
     win_rate = (len(wins) / len(closed) * 100) if closed else 0
 
-    # === MARKT-INDIZES (mit Realtime-Kursen) ===
+    # === MARKT-INDIZES (mit Realtime-Kursen, bereits parallel geholt) ===
+    from aggregator.currency import get_ticker_currency, convert_to_eur, get_currency_symbol
     index_map = {"SPY": "S&P 500", "QQQ": "Nasdaq 100", "IWM": "Russell 2000", "DIA": "Dow Jones", "VGK": "Europa", "EEM": "Emerging"}
+
+    # Batch: alle Index-Ticker + OHLCV auf einmal
+    index_tickers = db.query(Ticker).filter(Ticker.symbol.in_(index_map.keys())).all()
+    idx_by_sym = {t.symbol: t for t in index_tickers}
+    idx_ticker_ids = [t.id for t in index_tickers]
+
+    idx_ohlcv_all = (
+        db.query(OHLCVData)
+        .filter(OHLCVData.ticker_id.in_(idx_ticker_ids))
+        .order_by(OHLCVData.ticker_id, desc(OHLCVData.date))
+        .all()
+    ) if idx_ticker_ids else []
+
+    idx_ohlcv_by_tid = {}
+    for row in idx_ohlcv_all:
+        idx_ohlcv_by_tid.setdefault(row.ticker_id, []).append(row)
+    for tid in idx_ohlcv_by_tid:
+        idx_ohlcv_by_tid[tid] = idx_ohlcv_by_tid[tid][:20]
+
     indices = []
     for sym, name in index_map.items():
-        ticker = db.query(Ticker).filter(Ticker.symbol == sym).first()
+        ticker = idx_by_sym.get(sym)
         if not ticker:
             continue
-        prices = db.query(OHLCVData).filter(OHLCVData.ticker_id == ticker.id).order_by(desc(OHLCVData.date)).limit(20).all()
+        prices = idx_ohlcv_by_tid.get(ticker.id, [])
         if len(prices) < 2:
             continue
 
-        # Versuche Realtime-Kurs
-        rt = get_realtime_quote(sym)
+        rt = rt_quotes.get(sym)
         if rt:
             cur = rt["price"]
             d1 = rt["change_pct"]
@@ -273,7 +336,6 @@ def trading_desk(db: Session = Depends(get_db)):
             source = "eod"
 
         d20 = round(((cur - float(prices[-1].close)) / float(prices[-1].close)) * 100, 2) if len(prices) >= 20 else d1
-        from aggregator.currency import get_ticker_currency, convert_to_eur, get_currency_symbol
         ccy = get_ticker_currency(sym)
         indices.append({
             "symbol": sym, "name": name, "price": round(cur, 2),
@@ -282,14 +344,31 @@ def trading_desk(db: Session = Depends(get_db)):
             "price_eur": convert_to_eur(cur, ccy) if ccy != "EUR" else None,
         })
 
-    # === SEKTOR-ROTATION ===
+    # === SEKTOR-ROTATION (Batch-Query) ===
     sector_etfs = {"XLK": "Tech", "XLF": "Finanz", "XLV": "Health", "XLE": "Energie", "XLI": "Industrie", "XLP": "Konsum S.", "XLY": "Konsum D.", "XLU": "Versorger", "XLC": "Komm.", "XLRE": "Immob.", "XLB": "Material"}
+    sector_tickers = db.query(Ticker).filter(Ticker.symbol.in_(sector_etfs.keys())).all()
+    sec_by_sym = {t.symbol: t for t in sector_tickers}
+    sec_ticker_ids = [t.id for t in sector_tickers]
+
+    sec_ohlcv_all = (
+        db.query(OHLCVData)
+        .filter(OHLCVData.ticker_id.in_(sec_ticker_ids))
+        .order_by(OHLCVData.ticker_id, desc(OHLCVData.date))
+        .all()
+    ) if sec_ticker_ids else []
+
+    sec_ohlcv_by_tid = {}
+    for row in sec_ohlcv_all:
+        sec_ohlcv_by_tid.setdefault(row.ticker_id, []).append(row)
+    for tid in sec_ohlcv_by_tid:
+        sec_ohlcv_by_tid[tid] = sec_ohlcv_by_tid[tid][:20]
+
     sectors = []
     for sym, name in sector_etfs.items():
-        ticker = db.query(Ticker).filter(Ticker.symbol == sym).first()
+        ticker = sec_by_sym.get(sym)
         if not ticker:
             continue
-        prices = db.query(OHLCVData).filter(OHLCVData.ticker_id == ticker.id).order_by(desc(OHLCVData.date)).limit(20).all()
+        prices = sec_ohlcv_by_tid.get(ticker.id, [])
         if len(prices) >= 2:
             cur = float(prices[0].close)
             d1 = round(((cur - float(prices[1].close)) / float(prices[1].close)) * 100, 2)
@@ -297,15 +376,31 @@ def trading_desk(db: Session = Depends(get_db)):
             sectors.append({"symbol": sym, "name": name, "change_1d": d1, "change_20d": d20})
     sectors.sort(key=lambda x: x["change_20d"], reverse=True)
 
-    # === TOP MOVERS ===
+    # === TOP MOVERS (Batch-Query statt N+1) ===
     all_tickers = db.query(Ticker).join(Watchlist).all()
+    all_ticker_ids = [t.id for t in all_tickers]
+    ticker_by_id = {t.id: t for t in all_tickers}
+
+    # Nur die letzten 2 Preise pro Ticker holen — eine einzige Query
+    latest_two = (
+        db.query(OHLCVData.ticker_id, OHLCVData.close, OHLCVData.date)
+        .filter(OHLCVData.ticker_id.in_(all_ticker_ids))
+        .order_by(OHLCVData.ticker_id, desc(OHLCVData.date))
+        .all()
+    ) if all_ticker_ids else []
+
+    movers_by_tid = {}
+    for row in latest_two:
+        lst = movers_by_tid.setdefault(row.ticker_id, [])
+        if len(lst) < 2:
+            lst.append(float(row.close))
+
     movers = []
-    for t in all_tickers:
-        prices = db.query(OHLCVData).filter(OHLCVData.ticker_id == t.id).order_by(desc(OHLCVData.date)).limit(2).all()
+    for tid, prices in movers_by_tid.items():
         if len(prices) >= 2:
-            cur = float(prices[0].close)
-            prev = float(prices[1].close)
+            cur, prev = prices[0], prices[1]
             ch = round(((cur - prev) / prev) * 100, 2)
+            t = ticker_by_id[tid]
             movers.append({"symbol": t.symbol, "name": t.name, "price": round(cur, 2), "change": ch})
     movers.sort(key=lambda x: abs(x["change"]), reverse=True)
 
@@ -351,12 +446,14 @@ def trading_desk(db: Session = Depends(get_db)):
     if weakest_sector:
         briefing_points.append(f"Schwächster Sektor: {weakest_sector['name']} ({weakest_sector['change_20d']:+.1f}% 20d)")
 
-    # Klumpenrisiko-Warnung
+    # Klumpenrisiko-Warnung (Batch-Query)
     if open_trades:
+        trade_symbols = list({t.symbol for t in open_trades})
+        trade_tickers = db.query(Ticker).filter(Ticker.symbol.in_(trade_symbols)).all()
+        sector_by_sym = {t.symbol: (t.sector or "Unknown") for t in trade_tickers}
         sector_counts = {}
         for trade in open_trades:
-            t = db.query(Ticker).filter(Ticker.symbol == trade.symbol).first()
-            sector = t.sector if t and t.sector else "Unknown"
+            sector = sector_by_sym.get(trade.symbol, "Unknown")
             sector_counts[sector] = sector_counts.get(sector, 0) + 1
         total_open = len(open_trades)
         for sector, count in sector_counts.items():
@@ -369,6 +466,15 @@ def trading_desk(db: Session = Depends(get_db)):
         briefing_points.append(f"⚡ {len(lev_buys)} Hebel-Signal(e) aktiv — HOHES RISIKO, max. 1% pro Trade")
     if vix_val > 25 and lev_buys:
         briefing_points.append(f"🚫 VIX > 25 — Hebelprodukte NICHT empfohlen bei erhöhter Vola")
+
+    # === DISCOVERY: Top-5 Vorschläge ===
+    from core.models import DiscoverySuggestion
+    top_discoveries = (
+        db.query(DiscoverySuggestion)
+        .order_by(desc(DiscoverySuggestion.discovery_score))
+        .limit(5)
+        .all()
+    )
 
     return {
         "briefing": briefing_points,
@@ -402,4 +508,17 @@ def trading_desk(db: Session = Depends(get_db)):
             "gainers": sorted([m for m in movers if m["change"] > 0], key=lambda x: x["change"], reverse=True)[:5],
             "losers": sorted([m for m in movers if m["change"] < 0], key=lambda x: x["change"])[:5],
         },
+        "discovery": [
+            {
+                "symbol": d.symbol,
+                "name": d.name,
+                "score": d.discovery_score,
+                "source": d.source,
+                "reason": d.reason,
+                "fund_count": d.fund_count,
+                "price": float(d.current_price) if d.current_price else None,
+                "rsi": d.rsi_14,
+            }
+            for d in top_discoveries
+        ],
     }

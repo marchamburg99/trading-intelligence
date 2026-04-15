@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { createChart, type IChartApi } from "lightweight-charts";
+import { createChart, type IChartApi, type ISeriesApi } from "lightweight-charts";
 
 interface OHLCVPoint {
   date: string;
@@ -13,8 +13,8 @@ interface OHLCVPoint {
 export function CandlestickChart({ data, height = 350 }: { data: OHLCVPoint[]; height?: number }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
+  const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
 
-  // Chart einmal erstellen
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -36,7 +36,17 @@ export function CandlestickChart({ data, height = 350 }: { data: OHLCVPoint[]; h
       timeScale: { borderColor: "#E7E5E4", timeVisible: false },
     });
 
+    const series = chart.addCandlestickSeries({
+      upColor: "#15803D",
+      downColor: "#DC2626",
+      borderUpColor: "#15803D",
+      borderDownColor: "#DC2626",
+      wickUpColor: "#15803D",
+      wickDownColor: "#DC2626",
+    });
+
     chartRef.current = chart;
+    seriesRef.current = series;
 
     const handleResize = () => {
       if (containerRef.current) {
@@ -49,44 +59,25 @@ export function CandlestickChart({ data, height = 350 }: { data: OHLCVPoint[]; h
       window.removeEventListener("resize", handleResize);
       chart.remove();
       chartRef.current = null;
+      seriesRef.current = null;
     };
   }, [height]);
 
-  // Daten setzen/aktualisieren (ohne Chart neu zu erstellen)
   useEffect(() => {
-    const chart = chartRef.current;
-    if (!chart || data.length === 0) return;
+    const series = seriesRef.current;
+    if (!series || data.length === 0) return;
 
-    // Alle bestehenden Series entfernen
-    try {
-      // lightweight-charts hat keine "removeAllSeries", also neu aufbauen
-      const series = chart.addCandlestickSeries({
-        upColor: "#15803D",
-        downColor: "#DC2626",
-        borderUpColor: "#15803D",
-        borderDownColor: "#DC2626",
-        wickUpColor: "#15803D",
-        wickDownColor: "#DC2626",
-      });
+    series.setData(
+      data.map((d) => ({
+        time: d.date as string,
+        open: d.open,
+        high: d.high,
+        low: d.low,
+        close: d.close,
+      }))
+    );
 
-      series.setData(
-        data.map((d) => ({
-          time: d.date as string,
-          open: d.open,
-          high: d.high,
-          low: d.low,
-          close: d.close,
-        }))
-      );
-
-      chart.timeScale().fitContent();
-
-      return () => {
-        try { chart.removeSeries(series); } catch { /* already removed */ }
-      };
-    } catch {
-      // Chart wurde bereits entfernt
-    }
+    chartRef.current?.timeScale().fitContent();
   }, [data]);
 
   return <div ref={containerRef} className="w-full" style={{ minHeight: height }} />;
