@@ -31,6 +31,7 @@ interface ProductInfo {
 }
 
 interface DashboardData {
+  portfolio_capital: number;
   briefing: string[];
   regime: { status: string; message: string; vix: number };
   macro: { ampel: "GREEN" | "YELLOW" | "RED"; indicators: Record<string, { value: number; status: string; date: string }> };
@@ -274,7 +275,7 @@ export function Dashboard() {
             <span className="text-[11px] font-medium text-gain">LIVE</span>
           </div>
           <span className="text-[11px] text-ink-faint">
-            Aktualisiert {timeLabel} · Auto-Refresh 60s · Kurse via yfinance/Alpha Vantage
+            Kapital: <b className="text-ink-secondary">€{data.portfolio_capital.toLocaleString("de-DE", {maximumFractionDigits: 0})}</b> · {timeLabel} · Auto-Refresh 60s
           </span>
           {typeof Notification !== "undefined" && Notification.permission !== "granted" && (
             <button onClick={() => Notification.requestPermission()} className="text-[10px] text-warn hover:text-warn/80">

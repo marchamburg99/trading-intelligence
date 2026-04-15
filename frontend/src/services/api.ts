@@ -88,6 +88,8 @@ export const api = {
     remove: (id: number) => deleteJSON(`/journal/${id}`),
     stats: () => fetchJSON("/journal/stats"),
     performance: () => fetchJSON("/journal/performance"),
+    portfolio: () => fetchJSON("/journal/portfolio"),
+    updatePortfolio: (data: { initial_capital: number }) => putJSON("/journal/portfolio", data),
   },
   analyze: {
     run: (data: { symbol: string; portfolio_capital?: number }) => postJSON("/analyze/", data),

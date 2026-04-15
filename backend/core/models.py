@@ -261,6 +261,15 @@ class JournalEntry(Base):
     created_at = Column(DateTime, server_default=func.now())
 
 
+class PortfolioSettings(Base):
+    __tablename__ = "portfolio_settings"
+
+    id = Column(Integer, primary_key=True)
+    initial_capital = Column(Numeric(14, 2), nullable=False, default=10000)
+    currency = Column(String(3), default="EUR")
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
 class DiscoverySuggestion(Base):
     __tablename__ = "discovery_suggestions"
 

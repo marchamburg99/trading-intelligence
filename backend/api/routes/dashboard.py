@@ -484,6 +484,10 @@ def trading_desk(db: Session = Depends(get_db)):
         .all()
     )
 
+    # Echtes Portfolio-Kapital fuer Position Sizing
+    from core.portfolio import get_current_capital
+    _capital = get_current_capital(db)
+
     # Shared FX-Rate Cache fuer alle Signal-Serialisierungen (1 Lookup pro Waehrung)
     _fx = {}
 
@@ -497,6 +501,7 @@ def trading_desk(db: Session = Depends(get_db)):
     )
 
     return {
+        "portfolio_capital": _capital,
         "briefing": briefing_points,
         "regime": {"status": regime, "message": regime_msg, "vix": vix_val},
         "macro": {"ampel": ampel, "indicators": macro},
@@ -506,14 +511,14 @@ def trading_desk(db: Session = Depends(get_db)):
             "sell": signal_counts.get(SignalType.SELL, 0),
             "hold": signal_counts.get(SignalType.HOLD, 0),
             "avoid": signal_counts.get(SignalType.AVOID, 0),
-            "buys": [_serialize_signal(s, fx_rates=_fx) for s in buy_signals],
-            "watch": [_serialize_signal(s, fx_rates=_fx) for s in strong_holds],
-            "sells": [_serialize_signal(s, fx_rates=_fx) for s in sell_signals],
+            "buys": [_serialize_signal(s, capital=_capital, fx_rates=_fx) for s in buy_signals],
+            "watch": [_serialize_signal(s, capital=_capital, fx_rates=_fx) for s in strong_holds],
+            "sells": [_serialize_signal(s, capital=_capital, fx_rates=_fx) for s in sell_signals],
         },
         "products": {
-            "leveraged": [_serialize_signal(s, fx_rates=_fx) for s in lev_buys[:8]],
-            "crypto": [_serialize_signal(s, fx_rates=_fx) for s in crypto_signals],
-            "commodities": [_serialize_signal(s, fx_rates=_fx) for s in commodity_signals],
+            "leveraged": [_serialize_signal(s, capital=_capital, fx_rates=_fx) for s in lev_buys[:8]],
+            "crypto": [_serialize_signal(s, capital=_capital, fx_rates=_fx) for s in crypto_signals],
+            "commodities": [_serialize_signal(s, capital=_capital, fx_rates=_fx) for s in commodity_signals],
         },
         "positions": {
             "open": positions,
