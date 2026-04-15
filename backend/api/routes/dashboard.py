@@ -5,7 +5,10 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, desc, func, case
 from datetime import date
 
+from core.config import get_settings
 from core.database import get_db
+
+settings = get_settings()
 from core.models import (
     Signal, Ticker, OHLCVData, Indicator, MacroData,
     SentimentScore, Watchlist, SignalType, JournalEntry,
@@ -457,6 +460,19 @@ def trading_desk(db: Session = Depends(get_db)):
             pct = count / total_open * 100
             if pct > 50:
                 briefing_points.append(f"⚠️ Klumpenrisiko: {pct:.0f}% deiner Positionen sind {sector}")
+
+    # Signal-Change Alerts aus Redis
+    import redis
+    import json as _json
+    _redis = redis.from_url(settings.redis_url)
+    _raw_alerts = _redis.get("signal_alerts")
+    signal_alerts = _json.loads(_raw_alerts) if _raw_alerts else []
+    for a in signal_alerts[-5:]:
+        arrow = "↗" if a["to"] == "BUY" else "↘" if a["to"] == "SELL" else "→"
+        emoji = "🟢" if a["to"] == "BUY" else "🔴" if a["to"] == "SELL" else "🔄"
+        briefing_points.append(
+            f"{emoji} {a['symbol']} Signal-Wechsel: {a['from']} {arrow} {a['to']} ({a['confidence']}%)"
+        )
 
     # Leveraged Briefing
     if lev_buys:

@@ -60,9 +60,9 @@ def fetch_fred_series(series_id: str, indicator_name: str, db: Session):
 
 def fetch_vix(db: Session):
     """VIX von Yahoo Finance abrufen."""
-    import yfinance as yf
+    from aggregator.yf_session import yf_safe_ticker
 
-    vix = yf.Ticker("^VIX")
+    vix = yf_safe_ticker("^VIX")
     hist = vix.history(period="3mo")
 
     for idx, row in hist.iterrows():

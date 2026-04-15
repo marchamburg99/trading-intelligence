@@ -38,10 +38,11 @@ app.conf.beat_schedule = {
         "task": "sentiment.tasks.fetch_news_sentiment",
         "schedule": 1800.0,  # 30 Minuten
     },
-    "fetch-reddit-sentiment": {
-        "task": "sentiment.tasks.fetch_reddit_sentiment",
-        "schedule": 3600.0,  # 1 Stunde
-    },
+    # Reddit-Sentiment deaktiviert: 0% Gewichtung im Signal-Score, verschwendet Ressourcen
+    # "fetch-reddit-sentiment": {
+    #     "task": "sentiment.tasks.fetch_reddit_sentiment",
+    #     "schedule": 3600.0,
+    # },
     "scan-13f-filings": {
         "task": "hedgefunds.tasks.scan_new_filings",
         "schedule": crontab(minute=0, hour=8),  # täglich 08:00 UTC

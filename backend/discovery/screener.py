@@ -3,7 +3,7 @@ import math
 import structlog
 import pandas as pd
 import pandas_ta as pta
-import yfinance as yf
+from aggregator.yf_session import yf_safe_download
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, func
 
@@ -294,12 +294,10 @@ def _screen_candidates(candidates: list[str], db: Session) -> dict[str, dict]:
             # Batch in Gruppen von 50 aufteilen
             for i in range(0, len(to_fetch), 50):
                 batch = to_fetch[i:i + 50]
-                data = yf.download(
-                    tickers=batch,
+                data = yf_safe_download(
+                    batch,
                     period="6mo",
                     group_by="ticker",
-                    threads=True,
-                    progress=False,
                 )
 
                 if data.empty:

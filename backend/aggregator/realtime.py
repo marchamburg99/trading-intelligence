@@ -2,7 +2,7 @@
 import time
 import structlog
 import httpx
-import yfinance as yf
+from aggregator.yf_session import yf_safe_ticker
 import redis
 import json
 from core.config import get_settings
@@ -68,7 +68,7 @@ def get_realtime_quote_av(symbol: str) -> dict | None:
 def get_realtime_quote_yf(symbol: str) -> dict | None:
     """Echtzeit-Kurs via yfinance (fast_info)."""
     try:
-        ticker = yf.Ticker(symbol)
+        ticker = yf_safe_ticker(symbol)
         info = ticker.fast_info
         price = info.get("lastPrice") or info.get("previousClose")
         prev = info.get("previousClose") or price

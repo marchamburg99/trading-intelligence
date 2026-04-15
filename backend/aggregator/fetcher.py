@@ -1,8 +1,8 @@
 import math
 import structlog
-import yfinance as yf
 import pandas as pd
 import pandas_ta as ta
+from aggregator.yf_session import yf_safe_ticker
 from datetime import date, timedelta
 from sqlalchemy.orm import Session
 
@@ -24,7 +24,7 @@ def safe_float(val):
 
 def fetch_and_store_ohlcv(symbol: str, db: Session, period: str = "1y") -> bool:
     """Lade OHLCV-Daten von Yahoo Finance und speichere in DB."""
-    ticker_obj = yf.Ticker(symbol)
+    ticker_obj = yf_safe_ticker(symbol)
     hist = ticker_obj.history(period=period)
 
     if hist.empty:

@@ -1,6 +1,6 @@
 """Währungserkennung + EUR-Umrechnung mit Redis-Cache."""
 import structlog
-import yfinance as yf
+from aggregator.yf_session import yf_safe_ticker
 import redis
 import json
 from core.config import get_settings
@@ -67,7 +67,7 @@ def get_exchange_rate(from_currency: str) -> float | None:
         return None
 
     try:
-        ticker = yf.Ticker(pair)
+        ticker = yf_safe_ticker(pair)
         rate = ticker.fast_info.get("lastPrice")
         if rate and rate > 0:
             redis_client.setex(cache_key, CACHE_TTL, str(rate))
