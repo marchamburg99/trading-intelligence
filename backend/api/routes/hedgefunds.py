@@ -60,7 +60,7 @@ def get_cluster_signals(min_funds: int = Query(3, ge=2), db: Session = Depends(g
             func.sum(HedgeFundPosition.value).label("total_value"),
         )
         .join(HedgeFundFiling)
-        .filter(HedgeFundPosition.change_type.in_(["NEW", "INCREASED"]))
+        .filter(HedgeFundPosition.symbol.isnot(None))
         .group_by(HedgeFundPosition.symbol)
         .having(func.count(func.distinct(HedgeFundFiling.fund_name)) >= min_funds)
         .order_by(desc("fund_count"))
