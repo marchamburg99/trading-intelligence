@@ -41,6 +41,7 @@ interface DashboardData {
   sectors: { symbol: string; name: string; change_1d: number; change_20d: number }[];
   movers: { gainers: { symbol: string; name: string; price: number; change: number }[]; losers: { symbol: string; name: string; price: number; change: number }[] };
   discovery: { symbol: string; name: string | null; score: number; source: string; reason: string; fund_count: number | null; price: number | null; rsi: number | null }[];
+  top_watchlist: { symbol: string; name: string; signal_type: SignalType; confidence: number; entry_price: number; stop_loss: number; take_profit: number; reasoning: string }[];
 }
 
 const AMPEL = {
@@ -346,6 +347,53 @@ export function Dashboard() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* === TOP WATCHLIST === */}
+      {data.top_watchlist && data.top_watchlist.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="section-label">Top Watchlist — Höchste Konfidenz</h2>
+            <a href="/watchlist" className="text-[11px] font-medium text-accent hover:text-accent-hover transition-colors">
+              Alle {data.signals.total} Signale &rarr;
+            </a>
+          </div>
+          <div className="card p-0 overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-[10px] uppercase tracking-wider text-ink-tertiary border-b border-border bg-surface-muted/50">
+                  <th className="py-2.5 px-4 text-left">Symbol</th>
+                  <th className="py-2.5 px-2 text-center">Signal</th>
+                  <th className="py-2.5 px-2 text-right">Konfidenz</th>
+                  <th className="py-2.5 px-2 text-right hidden md:table-cell">Entry</th>
+                  <th className="py-2.5 px-2 text-right hidden md:table-cell">Stop-Loss</th>
+                  <th className="py-2.5 px-2 text-right hidden md:table-cell">Take-Profit</th>
+                  <th className="py-2.5 px-2 text-left hidden lg:table-cell">Begründung</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.top_watchlist.map((s) => (
+                  <tr key={s.symbol} className="border-b border-border/50 hover:bg-surface-muted transition-colors">
+                    <td className="py-2.5 px-4">
+                      <a href={`https://finance.yahoo.com/quote/${s.symbol}`} target="_blank" rel="noopener noreferrer" className="font-bold text-ink hover:text-accent transition-colors">{s.symbol}</a>
+                      {s.name && <span className="text-ink-tertiary text-xs ml-1.5 hidden lg:inline">{s.name}</span>}
+                    </td>
+                    <td className="py-2.5 px-2 text-center"><SignalBadge type={s.signal_type} /></td>
+                    <td className="py-2.5 px-2 text-right">
+                      <span className={`font-bold ${s.confidence >= 65 ? "text-gain" : s.confidence >= 50 ? "text-accent" : "text-ink-secondary"}`}>
+                        {s.confidence.toFixed(0)}%
+                      </span>
+                    </td>
+                    <td className="py-2.5 px-2 text-right font-mono text-ink hidden md:table-cell">${s.entry_price.toFixed(2)}</td>
+                    <td className="py-2.5 px-2 text-right font-mono text-loss hidden md:table-cell">${s.stop_loss.toFixed(2)}</td>
+                    <td className="py-2.5 px-2 text-right font-mono text-gain hidden md:table-cell">${s.take_profit.toFixed(2)}</td>
+                    <td className="py-2.5 px-2 text-ink-secondary text-xs hidden lg:table-cell max-w-xs truncate">{s.reasoning}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}

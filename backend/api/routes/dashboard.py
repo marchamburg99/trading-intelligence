@@ -475,6 +475,15 @@ def trading_desk(db: Session = Depends(get_db)):
     if vix_val > 25 and lev_buys:
         briefing_points.append(f"🚫 VIX > 25 — Hebelprodukte NICHT empfohlen bei erhöhter Vola")
 
+    # === TOP WATCHLIST (konfidenteste Signale) ===
+    top_signals = (
+        db.query(Signal).join(Ticker)
+        .filter(Signal.is_active == True)
+        .order_by(desc(Signal.confidence))
+        .limit(10)
+        .all()
+    )
+
     # Shared FX-Rate Cache fuer alle Signal-Serialisierungen (1 Lookup pro Waehrung)
     _fx = {}
 
@@ -519,6 +528,19 @@ def trading_desk(db: Session = Depends(get_db)):
             "gainers": sorted([m for m in movers if m["change"] > 0], key=lambda x: x["change"], reverse=True)[:5],
             "losers": sorted([m for m in movers if m["change"] < 0], key=lambda x: x["change"])[:5],
         },
+        "top_watchlist": [
+            {
+                "symbol": s.ticker.symbol,
+                "name": s.ticker.name,
+                "signal_type": s.signal_type.value,
+                "confidence": s.confidence,
+                "entry_price": float(s.entry_price) if s.entry_price else 0,
+                "stop_loss": float(s.stop_loss) if s.stop_loss else 0,
+                "take_profit": float(s.take_profit) if s.take_profit else 0,
+                "reasoning": s.reasoning,
+            }
+            for s in top_signals
+        ],
         "discovery": [
             {
                 "symbol": d.symbol,
