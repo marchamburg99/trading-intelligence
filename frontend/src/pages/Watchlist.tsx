@@ -140,7 +140,10 @@ function TickerDetailPanel({ symbol, onClose }: { symbol: string; onClose: () =>
         </div>
       )}
 
-      {signal && (
+      {signal && (() => {
+        const suffixMap: Record<string, string> = { ".DE": "€", ".PA": "€", ".AS": "€", ".MI": "€", ".SW": "CHF ", ".L": "£" };
+        const ccy = Object.entries(suffixMap).find(([s]) => symbol.endsWith(s))?.[1] ?? "$";
+        return (
         <div className={`mt-4 pt-4 border-t border-border`}>
           <div className="flex items-center gap-3 mb-3">
             <h4 className="text-sm font-semibold text-ink">Trading-Signal</h4>
@@ -153,15 +156,15 @@ function TickerDetailPanel({ symbol, onClose }: { symbol: string; onClose: () =>
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
                 <div className="text-[10px] uppercase tracking-wider text-ink-tertiary">Einstieg</div>
-                <div className="text-lg font-bold font-mono">${signal.entry_price.toFixed(2)}</div>
+                <div className="text-lg font-bold font-mono">{ccy}{signal.entry_price.toFixed(2)}</div>
               </div>
               <div>
                 <div className="text-[10px] uppercase tracking-wider text-loss">Stop-Loss</div>
-                <div className="text-lg font-bold font-mono text-loss">${signal.stop_loss.toFixed(2)}</div>
+                <div className="text-lg font-bold font-mono text-loss">{ccy}{signal.stop_loss.toFixed(2)}</div>
               </div>
               <div>
                 <div className="text-[10px] uppercase tracking-wider text-gain">Take-Profit</div>
-                <div className="text-lg font-bold font-mono text-gain">${signal.take_profit.toFixed(2)}</div>
+                <div className="text-lg font-bold font-mono text-gain">{ccy}{signal.take_profit.toFixed(2)}</div>
               </div>
             </div>
             <div className="border-t border-border/50 mt-3 pt-3 grid grid-cols-3 gap-4 text-center text-sm">
@@ -181,7 +184,8 @@ function TickerDetailPanel({ symbol, onClose }: { symbol: string; onClose: () =>
           </div>
           <p className="text-sm text-ink-secondary leading-relaxed">{signal.reasoning}</p>
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

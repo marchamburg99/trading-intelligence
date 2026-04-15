@@ -42,7 +42,7 @@ interface DashboardData {
   sectors: { symbol: string; name: string; change_1d: number; change_20d: number }[];
   movers: { gainers: { symbol: string; name: string; price: number; change: number }[]; losers: { symbol: string; name: string; price: number; change: number }[] };
   discovery: { symbol: string; name: string | null; score: number; source: string; reason: string; fund_count: number | null; price: number | null; rsi: number | null }[];
-  top_watchlist: { symbol: string; name: string; signal_type: SignalType; confidence: number; entry_price: number; stop_loss: number; take_profit: number; reasoning: string }[];
+  top_watchlist: { symbol: string; name: string; signal_type: SignalType; confidence: number; currency?: string; currency_symbol?: string; entry_price: number; stop_loss: number; take_profit: number; entry_eur?: number | null; sl_eur?: number | null; tp_eur?: number | null; reasoning: string }[];
 }
 
 const AMPEL = {
@@ -387,9 +387,9 @@ export function Dashboard() {
                         {s.confidence.toFixed(0)}%
                       </span>
                     </td>
-                    <td className="py-2.5 px-2 text-right font-mono text-ink hidden md:table-cell">${s.entry_price.toFixed(2)}</td>
-                    <td className="py-2.5 px-2 text-right font-mono text-loss hidden md:table-cell">${s.stop_loss.toFixed(2)}</td>
-                    <td className="py-2.5 px-2 text-right font-mono text-gain hidden md:table-cell">${s.take_profit.toFixed(2)}</td>
+                    <td className="py-2.5 px-2 text-right font-mono text-ink hidden md:table-cell"><Price value={s.entry_price} currency={s.currency} currencySymbol={s.currency_symbol} eurValue={s.entry_eur} /></td>
+                    <td className="py-2.5 px-2 text-right font-mono text-loss hidden md:table-cell"><Price value={s.stop_loss} currency={s.currency} currencySymbol={s.currency_symbol} eurValue={s.sl_eur} className="text-loss" /></td>
+                    <td className="py-2.5 px-2 text-right font-mono text-gain hidden md:table-cell"><Price value={s.take_profit} currency={s.currency} currencySymbol={s.currency_symbol} eurValue={s.tp_eur} className="text-gain" /></td>
                     <td className="py-2.5 px-2 text-ink-secondary text-xs hidden lg:table-cell max-w-xs truncate">{s.reasoning}</td>
                   </tr>
                 ))}

@@ -21,9 +21,42 @@ from core.products import (
 
 router = APIRouter()
 
+from aggregator.currency import get_ticker_currency, get_exchange_rate, get_currency_symbol
+
+
+def _convert_eur(value: float, ccy: str, fx_rates: dict) -> float | None:
+    if not value or ccy == "EUR":
+        return None
+    rate = fx_rates.get(ccy)
+    if rate and rate > 0:
+        return round(value / rate, 2)
+    return None
+
+
+def _serialize_top_signal(s, fx_rates):
+    sym = s.ticker.symbol
+    entry = float(s.entry_price) if s.entry_price else 0
+    sl = float(s.stop_loss) if s.stop_loss else 0
+    tp = float(s.take_profit) if s.take_profit else 0
+    ccy = get_ticker_currency(sym)
+    return {
+        "symbol": sym,
+        "name": s.ticker.name,
+        "signal_type": s.signal_type.value,
+        "confidence": s.confidence,
+        "currency": ccy,
+        "currency_symbol": get_currency_symbol(ccy),
+        "entry_price": entry,
+        "stop_loss": sl,
+        "take_profit": tp,
+        "entry_eur": _convert_eur(entry, ccy, fx_rates),
+        "sl_eur": _convert_eur(sl, ccy, fx_rates),
+        "tp_eur": _convert_eur(tp, ccy, fx_rates),
+        "reasoning": s.reasoning,
+    }
+
 
 def _serialize_signal(s, capital=100000.0, fx_rates=None):
-    from aggregator.currency import get_ticker_currency, get_exchange_rate, get_currency_symbol
 
     entry = float(s.entry_price) if s.entry_price else 0
     sl = float(s.stop_loss) if s.stop_loss else 0
@@ -534,19 +567,7 @@ def trading_desk(db: Session = Depends(get_db)):
             "gainers": sorted([m for m in movers if m["change"] > 0], key=lambda x: x["change"], reverse=True)[:5],
             "losers": sorted([m for m in movers if m["change"] < 0], key=lambda x: x["change"])[:5],
         },
-        "top_watchlist": [
-            {
-                "symbol": s.ticker.symbol,
-                "name": s.ticker.name,
-                "signal_type": s.signal_type.value,
-                "confidence": s.confidence,
-                "entry_price": float(s.entry_price) if s.entry_price else 0,
-                "stop_loss": float(s.stop_loss) if s.stop_loss else 0,
-                "take_profit": float(s.take_profit) if s.take_profit else 0,
-                "reasoning": s.reasoning,
-            }
-            for s in top_signals
-        ],
+        "top_watchlist": [_serialize_top_signal(s, _fx) for s in top_signals],
         "discovery": [
             {
                 "symbol": d.symbol,
