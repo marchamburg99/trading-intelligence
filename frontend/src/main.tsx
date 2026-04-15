@@ -13,6 +13,7 @@ import { WatchlistPage } from "./pages/Watchlist";
 import { Journal } from "./pages/Journal";
 import { Risk } from "./pages/Risk";
 import { AIAnalysis } from "./pages/AIAnalysis";
+import { Discovery } from "./pages/Discovery";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
@@ -20,6 +21,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <Routes>
         <Route element={<Layout />}>
           <Route path="/" element={<Dashboard />} />
+          <Route path="/discovery" element={<Discovery />} />
           <Route path="/signals" element={<Signals />} />
           <Route path="/scanner" element={<Scanner />} />
           <Route path="/hedgefunds" element={<HedgeFunds />} />

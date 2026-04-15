@@ -40,6 +40,7 @@ interface DashboardData {
   indices: { symbol: string; name: string; price: number; change_1d: number; change_20d: number }[];
   sectors: { symbol: string; name: string; change_1d: number; change_20d: number }[];
   movers: { gainers: { symbol: string; name: string; price: number; change: number }[]; losers: { symbol: string; name: string; price: number; change: number }[] };
+  discovery: { symbol: string; name: string | null; score: number; source: string; reason: string; fund_count: number | null; price: number | null; rsi: number | null }[];
 }
 
 const AMPEL = {
@@ -314,6 +315,40 @@ export function Dashboard() {
 
       {/* === OFFENE POSITIONEN === */}
       <OpenPositions positions={data.positions.open} unrealized_total={data.positions.unrealized_total} realized_total={data.positions.realized_total} win_rate={data.positions.win_rate} />
+
+      {/* === DISCOVERY TEASER === */}
+      {data.discovery && data.discovery.length > 0 && (
+        <div className="card border-accent/10">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="section-label text-accent">Entdeckungen — Neue Chancen</h2>
+            <a href="/discovery" className="text-[11px] font-medium text-accent hover:text-accent-hover transition-colors">
+              Alle anzeigen &rarr;
+            </a>
+          </div>
+          <div className="space-y-2">
+            {data.discovery.map((d) => (
+              <div key={d.symbol} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
+                <div className="flex items-center gap-3">
+                  <a href={`https://finance.yahoo.com/quote/${d.symbol}`} target="_blank" rel="noopener noreferrer" className="font-bold text-ink hover:text-accent transition-colors">{d.symbol}</a>
+                  <span className="text-xs text-ink-tertiary">{d.name}</span>
+                  {d.fund_count && <span className="text-[10px] bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded border border-purple-100">{d.fund_count} Fonds</span>}
+                </div>
+                <div className="flex items-center gap-4">
+                  {d.price && <span className="font-mono text-sm text-ink-secondary">${d.price.toFixed(2)}</span>}
+                  {d.rsi != null && (
+                    <span className={`font-mono text-xs ${d.rsi < 30 ? "text-gain" : d.rsi > 70 ? "text-loss" : "text-ink-tertiary"}`}>
+                      RSI {d.rsi.toFixed(0)}
+                    </span>
+                  )}
+                  <span className={`text-sm font-bold ${d.score >= 70 ? "text-gain" : d.score >= 55 ? "text-accent" : "text-ink-secondary"}`}>
+                    {d.score.toFixed(0)}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* === KAUF-SIGNALE === */}
       {hasBuys && (
