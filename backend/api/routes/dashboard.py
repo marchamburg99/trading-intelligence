@@ -194,7 +194,7 @@ def trading_desk(db: Session = Depends(get_db)):
     product_signals = [s for s in all_signals if s.ticker.symbol in special_symbols]
 
     buy_signals = [s for s in normal_signals if s.signal_type == SignalType.BUY]
-    strong_holds = [s for s in normal_signals if s.signal_type == SignalType.HOLD and s.confidence >= 63][:5]
+    strong_holds = [s for s in all_signals if s.signal_type == SignalType.HOLD and s.confidence >= 60][:8]
     sell_signals = [s for s in normal_signals if s.signal_type == SignalType.SELL]
 
     # Leveraged Products — eigene Kategorien
