@@ -261,6 +261,26 @@ class JournalEntry(Base):
     created_at = Column(DateTime, server_default=func.now())
 
 
+class DiscoverySuggestion(Base):
+    __tablename__ = "discovery_suggestions"
+
+    id = Column(Integer, primary_key=True)
+    symbol = Column(String(20), nullable=False, index=True)
+    name = Column(String(255))
+    sector = Column(String(100))
+    discovery_score = Column(Float, nullable=False)
+    hedge_fund_score = Column(Float)
+    technical_score = Column(Float)
+    sector_score = Column(Float)
+    source = Column(String(50))
+    reason = Column(Text, nullable=False)
+    fund_count = Column(Integer)
+    fund_names = Column(JSON)
+    current_price = Column(Numeric(12, 4))
+    rsi_14 = Column(Float)
+    created_at = Column(DateTime, server_default=func.now())
+
+
 class BacktestResult(Base):
     __tablename__ = "backtest_results"
 

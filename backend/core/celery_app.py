@@ -50,6 +50,10 @@ app.conf.beat_schedule = {
         "task": "papers.tasks.fetch_new_papers",
         "schedule": crontab(minute=0, hour=6),  # täglich 06:00 UTC
     },
+    "run-discovery": {
+        "task": "discovery.tasks.run_discovery",
+        "schedule": crontab(minute=0, hour=5),  # täglich 05:00 UTC
+    },
 }
 
 app.autodiscover_tasks([
@@ -60,4 +64,5 @@ app.autodiscover_tasks([
     "hedgefunds",
     "papers",
     "backtest",
+    "discovery",
 ])
