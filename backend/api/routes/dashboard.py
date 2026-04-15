@@ -142,6 +142,10 @@ def _serialize_signal(s, capital=100000.0, fx_rates=None):
 def trading_desk(db: Session = Depends(get_db)):
     """Komplettes Trading-Desk in einem Call."""
 
+    # Echtes Portfolio-Kapital fuer Position Sizing + Ranking
+    from core.portfolio import get_current_capital
+    _capital = get_current_capital(db)
+
     # === MAKRO-KONTEXT (Batch-Query) ===
     macro_indicators = ["VIX", "FED_FUNDS", "YIELD_SPREAD", "CPI", "NFP"]
     macro_subq = (
@@ -201,8 +205,29 @@ def trading_desk(db: Session = Depends(get_db)):
     product_signals = [s for s in all_signals if s.ticker.symbol in special_symbols]
 
     buy_signals = [s for s in normal_signals if s.signal_type == SignalType.BUY]
-    strong_holds = [s for s in all_signals if s.signal_type == SignalType.HOLD and s.confidence >= 60][:8]
     sell_signals = [s for s in normal_signals if s.signal_type == SignalType.SELL]
+
+    # Watch: HOLD-Signale sortiert nach Konfidenz × Gewinnpotenzial (volumenbereinigt)
+    hold_candidates = [s for s in all_signals if s.signal_type == SignalType.HOLD and s.confidence >= 55]
+    def _effective_score(s):
+        entry = float(s.entry_price) if s.entry_price else 0
+        tp = float(s.take_profit) if s.take_profit else 0
+        sl = float(s.stop_loss) if s.stop_loss else 0
+        if entry <= 0:
+            return s.confidence
+        risk_per_share = abs(entry - sl)
+        reward_per_share = abs(tp - entry)
+        # Max Stueck unter Volumen-Cap (20% Kapital)
+        max_shares = min(
+            int((_capital * 0.02) / risk_per_share) if risk_per_share > 0 else 0,
+            int((_capital * 0.20) / entry),
+        )
+        max_gain_pct = (reward_per_share * max_shares / _capital * 100) if _capital > 0 else 0
+        # Score: 70% Konfidenz + 30% Gewinnpotenzial (normalisiert auf 0-100)
+        gain_score = min(100, max_gain_pct * 20)  # 5% Gewinn = Score 100
+        return s.confidence * 0.7 + gain_score * 0.3
+    hold_candidates.sort(key=_effective_score, reverse=True)
+    strong_holds = hold_candidates[:8]
 
     # Leveraged Products — eigene Kategorien
     lev_buys = [s for s in product_signals if s.ticker.symbol in leveraged_symbols and s.signal_type in (SignalType.BUY, SignalType.HOLD) and s.confidence >= 55]
@@ -490,10 +515,6 @@ def trading_desk(db: Session = Depends(get_db)):
         .limit(10)
         .all()
     )
-
-    # Echtes Portfolio-Kapital fuer Position Sizing
-    from core.portfolio import get_current_capital
-    _capital = get_current_capital(db)
 
     # Shared FX-Rate Cache fuer alle Signal-Serialisierungen (1 Lookup pro Waehrung)
     _fx = {}
