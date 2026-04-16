@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, Component, type ReactNode } from "react";
 import { api } from "@/services/api";
 import { SignalBadge } from "@/components/SignalBadge";
 import type { SignalType } from "@/types";
@@ -9,20 +9,20 @@ interface Position {
   sector?: string;
   shares: number;
   entry_price: number;
-  current_price?: number;
+  current_price?: number | null;
   current_value?: number;
   position_value: number;
-  unrealized_pnl: number;
-  unrealized_pct: number;
+  unrealized_pnl?: number | null;
+  unrealized_pct?: number | null;
   concentration?: number;
   currency_symbol?: string;
-  signal_type?: string;
-  confidence?: number;
-  data_quality?: number;
-  risk_rating?: number;
-  stop_loss?: number;
-  take_profit?: number;
-  rsi?: number;
+  signal_type?: string | null;
+  confidence?: number | null;
+  data_quality?: number | null;
+  risk_rating?: number | null;
+  stop_loss?: number | null;
+  take_profit?: number | null;
+  rsi?: number | null;
   action: string;
   reason: string;
   reasoning?: string;
@@ -62,6 +62,9 @@ function ActionBadge({ action }: { action: string }) {
 
 function PositionRow({ p, expanded, onToggle }: { p: Position; expanded: boolean; onToggle: () => void }) {
   const ccy = p.currency_symbol || "$";
+  const hasPnl = p.unrealized_pnl != null && p.unrealized_pct != null;
+  const pnlVal = p.unrealized_pnl ?? 0;
+  const pctVal = p.unrealized_pct ?? 0;
   return (
     <>
       <tr
@@ -74,12 +77,16 @@ function PositionRow({ p, expanded, onToggle }: { p: Position; expanded: boolean
           {p.name && <span className="text-ink-tertiary text-xs ml-1.5 hidden lg:inline">{p.name}</span>}
         </td>
         <td className="py-3 px-2 text-right font-mono">{p.shares}</td>
-        <td className="py-3 px-2 text-right font-mono">{ccy}{p.entry_price.toFixed(2)}</td>
-        <td className="py-3 px-2 text-right font-mono">{p.current_price ? `${ccy}${p.current_price.toFixed(2)}` : "—"}</td>
+        <td className="py-3 px-2 text-right font-mono">{ccy}{(p.entry_price ?? 0).toFixed(2)}</td>
+        <td className="py-3 px-2 text-right font-mono">{p.current_price != null ? `${ccy}${p.current_price.toFixed(2)}` : "—"}</td>
         <td className="py-3 px-2 text-right">
-          <span className={`font-mono font-semibold ${p.unrealized_pnl >= 0 ? "text-gain" : "text-loss"}`}>
-            {p.unrealized_pnl >= 0 ? "+" : ""}{ccy}{p.unrealized_pnl.toFixed(0)} ({p.unrealized_pct >= 0 ? "+" : ""}{p.unrealized_pct.toFixed(1)}%)
-          </span>
+          {hasPnl ? (
+            <span className={`font-mono font-semibold ${pnlVal >= 0 ? "text-gain" : "text-loss"}`}>
+              {pnlVal >= 0 ? "+" : ""}{ccy}{pnlVal.toFixed(0)} ({pctVal >= 0 ? "+" : ""}{pctVal.toFixed(1)}%)
+            </span>
+          ) : (
+            <span className="text-ink-faint text-xs">—</span>
+          )}
         </td>
         <td className="py-3 px-2 text-center hidden md:table-cell">
           {p.signal_type ? <SignalBadge type={p.signal_type as SignalType} /> : <span className="text-ink-faint text-xs">—</span>}
@@ -93,12 +100,12 @@ function PositionRow({ p, expanded, onToggle }: { p: Position; expanded: boolean
           <td colSpan={7} className="px-4 py-4">
             <div className="space-y-3">
               <p className="text-sm text-ink-secondary leading-relaxed">{p.reason}</p>
-              {p.stop_loss && p.take_profit && (
-                <div className="flex gap-6 text-sm">
-                  <span>SL: <b className="text-loss font-mono">{ccy}{p.stop_loss.toFixed(2)}</b></span>
-                  <span>TP: <b className="text-gain font-mono">{ccy}{p.take_profit.toFixed(2)}</b></span>
-                  {p.confidence && <span>Konfidenz: <b>{p.confidence.toFixed(0)}%</b></span>}
-                  {p.rsi && <span>RSI: <b className={p.rsi < 30 ? "text-gain" : p.rsi > 70 ? "text-loss" : ""}>{p.rsi.toFixed(0)}</b></span>}
+              {(p.stop_loss != null || p.take_profit != null || p.confidence != null || p.rsi != null || p.concentration != null) && (
+                <div className="flex gap-6 text-sm flex-wrap">
+                  {p.stop_loss != null && <span>SL: <b className="text-loss font-mono">{ccy}{p.stop_loss.toFixed(2)}</b></span>}
+                  {p.take_profit != null && <span>TP: <b className="text-gain font-mono">{ccy}{p.take_profit.toFixed(2)}</b></span>}
+                  {p.confidence != null && <span>Konfidenz: <b>{p.confidence.toFixed(0)}%</b></span>}
+                  {p.rsi != null && <span>RSI: <b className={p.rsi < 30 ? "text-gain" : p.rsi > 70 ? "text-loss" : ""}>{p.rsi.toFixed(0)}</b></span>}
                   {p.concentration != null && <span>Anteil: <b>{p.concentration.toFixed(1)}%</b> vom Kapital</span>}
                 </div>
               )}
@@ -113,7 +120,29 @@ function PositionRow({ p, expanded, onToggle }: { p: Position; expanded: boolean
   );
 }
 
+class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  state = { error: null as Error | null };
+  static getDerivedStateFromError(error: Error) { return { error }; }
+  componentDidCatch(error: Error) { console.error("PortfolioCheck crash:", error); }
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="card border-loss/20 bg-loss-bg/30">
+          <h3 className="text-loss font-bold mb-2">Fehler beim Rendern</h3>
+          <p className="text-sm text-ink-secondary mb-3">{String(this.state.error.message || this.state.error)}</p>
+          <button onClick={() => this.setState({ error: null })} className="btn-primary">Zuruecksetzen</button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export function PortfolioCheck() {
+  return <ErrorBoundary><PortfolioCheckInner /></ErrorBoundary>;
+}
+
+function PortfolioCheckInner() {
   const [mode, setMode] = useState<"manual" | "text" | "csv">("text");
   const [textInput, setTextInput] = useState("AAPL 10 150\nMSFT 5 380\nNVDA 3 800");
   const [manualRows, setManualRows] = useState([{ symbol: "", shares: "", price: "" }]);
@@ -273,23 +302,23 @@ export function PortfolioCheck() {
             </div>
             <div className="card text-center">
               <div className="text-[10px] text-ink-tertiary uppercase tracking-wider">Gesamtwert</div>
-              <div className="text-2xl font-bold text-ink">${result.total_value.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+              <div className="text-2xl font-bold text-ink">${(result.total_value ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
             </div>
             <div className="card text-center">
               <div className="text-[10px] text-ink-tertiary uppercase tracking-wider">P&L</div>
-              <div className={`text-2xl font-bold ${result.total_pnl >= 0 ? "text-gain" : "text-loss"}`}>
-                {result.total_pnl >= 0 ? "+" : ""}${result.total_pnl.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              <div className={`text-2xl font-bold ${(result.total_pnl ?? 0) >= 0 ? "text-gain" : "text-loss"}`}>
+                {(result.total_pnl ?? 0) >= 0 ? "+" : ""}${(result.total_pnl ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}
               </div>
             </div>
             <div className="card text-center">
               <div className="text-[10px] text-ink-tertiary uppercase tracking-wider">P&L %</div>
-              <div className={`text-2xl font-bold ${result.total_pnl_pct >= 0 ? "text-gain" : "text-loss"}`}>
-                {result.total_pnl_pct >= 0 ? "+" : ""}{result.total_pnl_pct.toFixed(1)}%
+              <div className={`text-2xl font-bold ${(result.total_pnl_pct ?? 0) >= 0 ? "text-gain" : "text-loss"}`}>
+                {(result.total_pnl_pct ?? 0) >= 0 ? "+" : ""}{(result.total_pnl_pct ?? 0).toFixed(1)}%
               </div>
             </div>
             <div className="card text-center">
               <div className="text-[10px] text-ink-tertiary uppercase tracking-wider">Kapital</div>
-              <div className="text-2xl font-bold text-ink">€{result.portfolio_capital.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+              <div className="text-2xl font-bold text-ink">€{(result.portfolio_capital ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
             </div>
           </div>
 
