@@ -54,8 +54,8 @@ def analyze_position(holding: PortfolioHolding, db: Session, capital: float) -> 
 
     ticker = db.query(Ticker).filter(Ticker.symbol == symbol).first()
 
-    # Fallback: unbekannten Ticker auto-enrollen in Watchlist
-    if not ticker:
+    # Fallback: unbekannten Ticker auto-enrollen (nur wenn EU-kaufbar)
+    if not ticker and is_eu_tradeable(symbol):
         try:
             ticker = Ticker(symbol=symbol, name=symbol)
             db.add(ticker)

@@ -515,11 +515,7 @@ def trading_desk(db: Session = Depends(get_db)):
             f"{emoji} {a['symbol']} Signal-Wechsel: {a['from']} {arrow} {a['to']} ({a['confidence']}%)"
         )
 
-    # Leveraged Briefing
-    if lev_buys:
-        briefing_points.append(f"⚡ {len(lev_buys)} Hebel-Signal(e) aktiv — HOHES RISIKO, max. 1% pro Trade")
-    if vix_val > 25 and lev_buys:
-        briefing_points.append(f"🚫 VIX > 25 — Hebelprodukte NICHT empfohlen bei erhöhter Vola")
+    # (Hebelprodukte-Briefing entfernt — in EU fuer Privatanleger ohnehin verboten)
 
     # === PORTFOLIO (persistente Positionen) ===
     from core.models import PortfolioHolding

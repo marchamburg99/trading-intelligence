@@ -2,6 +2,7 @@ from core.celery_app import app
 from core.database import SessionLocal
 from core.models import Watchlist, Ticker, Signal
 from core.portfolio import get_current_capital
+from core.products import is_eu_tradeable
 from signals.engine import generate_signal
 import structlog
 import redis
@@ -26,6 +27,9 @@ def update_all_signals():
         alerts = []
 
         for w in watchlist:
+            # Nicht-EU-Ticker ueberspringen (US-ETFs, Leveraged etc.)
+            if not is_eu_tradeable(w.ticker.symbol):
+                continue
             try:
                 # Altes Signal merken
                 old_signal = (

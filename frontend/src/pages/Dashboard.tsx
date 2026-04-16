@@ -35,10 +35,10 @@ interface ProductInfo {
 interface DashboardData {
   portfolio_capital: number;
   briefing: string[];
+  // products entfernt — Leveraged/Crypto/Commodity sind in EU nicht kaufbar
   regime: { status: string; message: string; vix: number };
   macro: { ampel: "GREEN" | "YELLOW" | "RED"; indicators: Record<string, { value: number; status: string; date: string }> };
   signals: { total: number; buy: number; sell: number; hold: number; avoid: number; buys: SignalItem[]; watch: SignalItem[]; sells: SignalItem[] };
-  products: { leveraged: (SignalItem & { product?: ProductInfo; effective_exposure?: number })[]; crypto: (SignalItem & { product?: ProductInfo })[]; commodities: (SignalItem & { product?: ProductInfo })[] };
   positions: { open: Position[]; unrealized_total: number; realized_total: number; total_trades: number; win_rate: number };
   indices: { symbol: string; name: string; price: number; change_1d: number; change_20d: number }[];
   sectors: { symbol: string; name: string; change_1d: number; change_20d: number }[];
@@ -547,104 +547,6 @@ export function Dashboard() {
         <div className="card border-warn/20 bg-warn-bg/30 text-center py-8">
           <p className="text-lg font-bold text-warn mb-2">Keine aktiven BUY-Signale</p>
           <p className="text-sm text-ink-secondary">{data.signals.hold} Titel auf HOLD, {data.signals.sell} auf SELL. Cash-Quote halten.</p>
-        </div>
-      )}
-
-      {/* === HEBELPRODUKTE === */}
-      {data.products.leveraged.length > 0 && (
-        <div className="card border-leverage/20 bg-leverage-bg/50">
-          <div className="flex items-center justify-between mb-1">
-            <div className="flex items-center gap-2">
-              <h2 className="section-label text-leverage">Hebelprodukte</h2>
-            </div>
-            <span className="text-[10px] bg-leverage-light text-leverage px-2 py-0.5 rounded-lg font-semibold">MAX. 1% RISIKO</span>
-          </div>
-          <div className="bg-leverage-light/50 border border-leverage/10 rounded-xl p-3 mb-4 text-xs text-leverage/80">
-            <p className="font-semibold mb-1">HOHES VERLUSTRISIKO — Leveraged ETFs nur für kurzfristige Trades (&lt;5 Tage).</p>
-            <p className="text-leverage/60">Volatility Decay: Langfristig verlieren Hebelprodukte an Wert. Totalverlust möglich.</p>
-          </div>
-          <div className="space-y-3">
-            {data.products.leveraged.map((s) => {
-              const p = s.product;
-              return (
-                <div key={s.symbol} className="border border-leverage/10 rounded-xl p-4 bg-surface">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <a href={`https://finance.yahoo.com/quote/${s.symbol}`} target="_blank" rel="noopener noreferrer" className="text-base font-bold text-ink hover:text-accent transition-colors">{s.symbol}</a>
-                        {p && <span className="text-[10px] bg-leverage-light text-leverage px-2 py-0.5 rounded-lg font-semibold">{p.leverage}x {p.direction}</span>}
-                        <SignalBadge type={s.signal_type} />
-                        <span className="text-xs text-ink-tertiary">{p?.name || s.name}</span>
-                      </div>
-                      <div className="mb-2"><ConfidenceBar value={s.confidence} /></div>
-                      <p className="text-xs text-ink-secondary">{s.reasoning}</p>
-                    </div>
-                    <div className="text-right ml-6 shrink-0">
-                      <div className="grid grid-cols-3 gap-3 text-center text-sm mb-2">
-                        <div><div className="text-[9px] text-ink-tertiary">Entry</div><div className="font-mono font-semibold text-ink">€{s.entry_price}</div></div>
-                        <div><div className="text-[9px] text-loss">SL</div><div className="font-mono font-semibold text-loss">€{s.stop_loss}</div></div>
-                        <div><div className="text-[9px] text-gain">TP</div><div className="font-mono font-semibold text-gain">€{s.take_profit}</div></div>
-                      </div>
-                      <div className="text-[10px] text-ink-tertiary mb-2">
-                        {s.position_size} Stk · Max-Loss <span className="text-loss font-semibold">€{s.max_loss.toLocaleString()}</span>
-                        {p && p.leverage > 1 && <> · Exposure <span className="text-leverage font-semibold">€{(s.effective_exposure || 0).toLocaleString()}</span></>}
-                      </div>
-                      <button onClick={() => {
-                        api.journal.create({ symbol: s.symbol, trade_date: new Date().toISOString().split("T")[0], direction: p?.direction === "SHORT" ? "SHORT" : "LONG", entry_price: s.entry_price, position_size: s.position_size, stop_loss: s.stop_loss, take_profit: s.take_profit, setup_type: `Hebel ${p?.leverage}x · ${s.confidence.toFixed(0)}%`, notes: s.reasoning }).then(() => {
-                          if (confirm(`✅ Trade im Journal geloggt!\n\n${s.position_size}x ${s.symbol} @ ${s.currency_symbol || "€"}${s.entry_price}\n\nJetzt bei deinem Broker ausführen?\n→ OK öffnet Yahoo Finance für ${s.symbol}`)) {
-                            window.open(`https://finance.yahoo.com/quote/${s.symbol}`, "_blank");
-                          }
-                          window.location.reload();
-                        });
-                      }} className="bg-leverage text-white hover:bg-leverage/90 font-semibold text-xs px-3 py-1.5 rounded-xl transition-all active:scale-[0.98]">Ins Journal eintragen</button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* === CRYPTO + ROHSTOFFE === */}
-      {(data.products.crypto.length > 0 || data.products.commodities.length > 0) && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {data.products.crypto.length > 0 && (
-            <div className="card">
-              <h2 className="section-label mb-3">Crypto ETFs</h2>
-              {data.products.crypto.map((s) => (
-                <div key={s.symbol} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
-                  <div>
-                    <a href={`https://finance.yahoo.com/quote/${s.symbol}`} target="_blank" rel="noopener noreferrer" className="font-semibold text-ink hover:text-accent transition-colors">{s.symbol}</a>
-                    <span className="text-xs text-ink-tertiary ml-2">{s.product?.name || s.name}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="font-mono text-sm text-ink-secondary">€{s.entry_price}</span>
-                    <SignalBadge type={s.signal_type} />
-                    <span className="text-sm font-semibold text-ink">{s.confidence.toFixed(0)}%</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-          {data.products.commodities.length > 0 && (
-            <div className="card">
-              <h2 className="section-label mb-3">Rohstoffe</h2>
-              {data.products.commodities.map((s) => (
-                <div key={s.symbol} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
-                  <div>
-                    <a href={`https://finance.yahoo.com/quote/${s.symbol}`} target="_blank" rel="noopener noreferrer" className="font-semibold text-ink hover:text-accent transition-colors">{s.symbol}</a>
-                    <span className="text-xs text-ink-tertiary ml-2">{s.product?.name || s.name}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="font-mono text-sm text-ink-secondary">€{s.entry_price}</span>
-                    <SignalBadge type={s.signal_type} />
-                    <span className="text-sm font-semibold text-ink">{s.confidence.toFixed(0)}%</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       )}
 

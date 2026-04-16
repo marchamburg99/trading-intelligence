@@ -6,6 +6,7 @@ from typing import Optional
 
 from core.database import get_db
 from core.models import Watchlist, Ticker, OHLCVData, Indicator, Signal
+from core.products import is_eu_tradeable, get_ucits_alternative
 
 router = APIRouter()
 
@@ -76,9 +77,24 @@ def get_watchlist(db: Session = Depends(get_db)):
 
 @router.post("/")
 def add_to_watchlist(item: WatchlistAdd, db: Session = Depends(get_db)):
-    ticker = db.query(Ticker).filter(Ticker.symbol == item.symbol.upper()).first()
+    symbol = item.symbol.upper()
+
+    # Nicht-EU-Ticker ablehnen, UCITS-Alternative vorschlagen
+    if not is_eu_tradeable(symbol):
+        ucits = get_ucits_alternative(symbol)
+        if ucits:
+            raise HTTPException(
+                400,
+                f"{symbol} ist nicht EU-kaufbar. UCITS-Alternative: {ucits['ucits']} ({ucits['name']})"
+            )
+        raise HTTPException(
+            400,
+            f"{symbol} ist nicht EU-kaufbar (Leveraged ETFs sind in EU fuer Privatanleger verboten)"
+        )
+
+    ticker = db.query(Ticker).filter(Ticker.symbol == symbol).first()
     if not ticker:
-        ticker = Ticker(symbol=item.symbol.upper(), is_active=True)
+        ticker = Ticker(symbol=symbol, is_active=True)
         db.add(ticker)
         db.flush()
 
