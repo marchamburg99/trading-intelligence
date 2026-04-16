@@ -11,6 +11,7 @@ from core.models import (
     HedgeFundFiling, HedgeFundPosition, OHLCVData, Ticker,
     DiscoverySuggestion, Watchlist,
 )
+from core.products import is_eu_tradeable
 from discovery.universe import SECTOR_TOP_STOCKS
 
 logger = structlog.get_logger()
@@ -375,6 +376,9 @@ def run_discovery_pipeline(db: Session) -> list[DiscoverySuggestion]:
     # Alle Kandidaten zusammenfuehren (HF-Cluster + Sektor-Picks)
     all_candidates = set(hf_by_sym.keys()) | sector_candidates
     all_candidates -= watchlist_syms  # Bereits auf Watchlist ausschliessen
+
+    # US-ETFs + Leveraged ETFs rausfiltern (nicht EU-kaufbar)
+    all_candidates = {s for s in all_candidates if is_eu_tradeable(s)}
 
     if not all_candidates:
         logger.info("discovery.no_candidates")

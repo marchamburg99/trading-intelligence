@@ -28,6 +28,8 @@ interface Position {
   action: string;
   reason: string;
   reasoning?: string;
+  eu_tradeable?: boolean;
+  ucits_alternative?: { ucits: string; name: string } | null;
 }
 
 interface PortfolioData {
@@ -74,6 +76,11 @@ function PositionRow({ p, expanded, onToggle, onDelete, onEdit }: {
         <td className="py-3 px-4">
           <a href={`https://finance.yahoo.com/quote/${p.symbol}`} target="_blank" rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()} className="font-bold text-ink hover:text-accent transition-colors">{p.symbol}</a>
+          {p.eu_tradeable === false && p.ucits_alternative && (
+            <span className="ml-1.5 text-[10px] text-warn" title={`Nicht EU-kaufbar. UCITS: ${p.ucits_alternative.ucits}`}>
+              ⚠ → {p.ucits_alternative.ucits}
+            </span>
+          )}
           {p.name && <span className="text-ink-tertiary text-xs ml-1.5 hidden lg:inline">{p.name}</span>}
         </td>
         <td className="py-3 px-2 text-right font-mono">{p.shares}</td>

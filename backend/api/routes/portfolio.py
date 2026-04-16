@@ -15,7 +15,7 @@ from core.models import (
     Ticker, Signal, Indicator, OHLCVData, Watchlist, PortfolioHolding,
 )
 from core.portfolio import get_current_capital
-from core.products import is_leveraged, get_product_info
+from core.products import is_leveraged, get_product_info, is_eu_tradeable, get_ucits_alternative
 from aggregator.currency import get_ticker_currency, get_currency_symbol
 
 settings = get_settings()
@@ -48,6 +48,8 @@ def analyze_position(holding: PortfolioHolding, db: Session, capital: float) -> 
     ccy = get_ticker_currency(symbol)
     result["currency"] = ccy
     result["currency_symbol"] = get_currency_symbol(ccy)
+    result["eu_tradeable"] = is_eu_tradeable(symbol)
+    result["ucits_alternative"] = get_ucits_alternative(symbol)
 
     ticker = db.query(Ticker).filter(Ticker.symbol == symbol).first()
 

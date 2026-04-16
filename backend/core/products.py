@@ -26,6 +26,64 @@ COMMODITY_ETFS = {"USO": "Crude Oil", "COPX": "Copper Miners", "UNG": "Natural G
 
 ALL_SPECIAL_SYMBOLS = set(LEVERAGED_PRODUCTS) | set(CRYPTO_ETFS) | set(COMMODITY_ETFS)
 
+# US-ETFs die in EU fuer Privatanleger NICHT direkt kaufbar sind (PRIIPs-Verordnung)
+# Mapping auf UCITS-Aequivalente die bei Trade Republic, Scalable etc. handelbar sind
+US_ETF_TO_UCITS = {
+    # Broad Market
+    "SPY":  {"ucits": "SXR8.DE", "name": "iShares Core S&P 500 UCITS"},
+    "VOO":  {"ucits": "SXR8.DE", "name": "iShares Core S&P 500 UCITS"},
+    "IVV":  {"ucits": "SXR8.DE", "name": "iShares Core S&P 500 UCITS"},
+    "QQQ":  {"ucits": "SXRV.DE", "name": "Invesco Nasdaq-100 UCITS"},
+    "IWM":  {"ucits": "XRS2.DE", "name": "Xtrackers Russell 2000 UCITS"},
+    "DIA":  {"ucits": "EXI2.DE", "name": "iShares Dow Jones Industrial UCITS"},
+    # International
+    "VGK":  {"ucits": "EXSA.DE", "name": "iShares STOXX Europe 600 UCITS"},
+    "EEM":  {"ucits": "IEMM.DE", "name": "iShares MSCI EM UCITS"},
+    # Sector ETFs (SPDR Select Sector)
+    "XLK":  {"ucits": "QDVE.DE", "name": "iShares S&P 500 Info Tech UCITS"},
+    "XLF":  {"ucits": "QDVH.DE", "name": "iShares S&P 500 Financials UCITS"},
+    "XLV":  {"ucits": "QDVG.DE", "name": "iShares S&P 500 Health Care UCITS"},
+    "XLE":  {"ucits": "QDVI.DE", "name": "iShares S&P 500 Energy UCITS"},
+    "XLI":  {"ucits": "QDVB.DE", "name": "iShares S&P 500 Industrials UCITS"},
+    "XLP":  {"ucits": "QDVD.DE", "name": "iShares S&P 500 Consumer Staples UCITS"},
+    "XLY":  {"ucits": "QDVK.DE", "name": "iShares S&P 500 Consumer Discret. UCITS"},
+    "XLU":  {"ucits": "QDVF.DE", "name": "iShares S&P 500 Utilities UCITS"},
+    "XLC":  {"ucits": "QDVX.DE", "name": "iShares S&P 500 Communication UCITS"},
+    "XLRE": {"ucits": "IUSP.DE", "name": "iShares US Property Yield UCITS"},
+    "XLB":  {"ucits": "QDVJ.DE", "name": "iShares S&P 500 Materials UCITS"},
+    "SOXX": {"ucits": "SXRS.DE", "name": "iShares Semiconductor UCITS"},
+    # Commodities
+    "USO":  {"ucits": "OD7F.DE", "name": "WisdomTree WTI Crude Oil"},
+    "UNG":  {"ucits": "OD7U.DE", "name": "WisdomTree Natural Gas"},
+    "DBA":  {"ucits": "OD7L.DE", "name": "WisdomTree Agriculture"},
+    "COPX": {"ucits": "2B7K.DE", "name": "Global X Copper Miners UCITS"},
+    "GDX":  {"ucits": "IE3G.DE", "name": "iShares Gold Producers UCITS"},
+    "XBI":  {"ucits": "IBBB.DE", "name": "iShares Nasdaq US Biotech UCITS"},
+    # Crypto
+    "IBIT": {"ucits": "BTCE.DE", "name": "BTCetc Physical Bitcoin ETP"},
+    "ETHA": {"ucits": "ZETH.DE", "name": "21Shares Ethereum ETP"},
+}
+
+# Leveraged ETFs sind in EU komplett verboten fuer Retail
+US_LEVERAGED_NOT_EU_TRADEABLE = set(LEVERAGED_PRODUCTS.keys())
+
+
+def is_eu_tradeable(symbol: str) -> bool:
+    """True wenn der Ticker fuer EU-Privatanleger direkt kaufbar ist."""
+    sym = symbol.upper()
+    # Leveraged ETFs: komplett verboten in EU
+    if sym in US_LEVERAGED_NOT_EU_TRADEABLE:
+        return False
+    # US-ETFs: nicht direkt kaufbar
+    if sym in US_ETF_TO_UCITS:
+        return False
+    return True
+
+
+def get_ucits_alternative(symbol: str) -> dict | None:
+    """UCITS-Aequivalent fuer US-ETF."""
+    return US_ETF_TO_UCITS.get(symbol.upper())
+
 
 def is_leveraged(symbol: str) -> bool:
     return symbol in LEVERAGED_PRODUCTS

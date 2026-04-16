@@ -17,6 +17,7 @@ interface SignalItem {
   ta_score: number; fundamental_score: number; sentiment_score: number; macro_score: number;
   currency?: string; currency_symbol?: string;
   entry_eur?: number | null; sl_eur?: number | null; tp_eur?: number | null;
+  eu_tradeable?: boolean; ucits_alternative?: { ucits: string; name: string } | null;
 }
 
 interface Position {
@@ -42,7 +43,7 @@ interface DashboardData {
   sectors: { symbol: string; name: string; change_1d: number; change_20d: number }[];
   movers: { gainers: { symbol: string; name: string; price: number; change: number }[]; losers: { symbol: string; name: string; price: number; change: number }[] };
   discovery: { symbol: string; name: string | null; score: number; source: string; reason: string; fund_count: number | null; price: number | null; rsi: number | null }[];
-  top_watchlist: { symbol: string; name: string; signal_type: SignalType; confidence: number; currency?: string; currency_symbol?: string; entry_price: number; stop_loss: number; take_profit: number; entry_eur?: number | null; sl_eur?: number | null; tp_eur?: number | null; reasoning: string }[];
+  top_watchlist: { symbol: string; name: string; signal_type: SignalType; confidence: number; currency?: string; currency_symbol?: string; entry_price: number; stop_loss: number; take_profit: number; entry_eur?: number | null; sl_eur?: number | null; tp_eur?: number | null; reasoning: string; eu_tradeable?: boolean; ucits_alternative?: { ucits: string; name: string } | null }[];
   portfolio?: { total_positions: number; total_value: number; total_pnl: number; total_pnl_pct: number; action_summary: Record<string, number>; critical: { symbol: string; action: string; current_price: number | null; unrealized_pct: number | null; currency_symbol?: string; reason: string }[] } | null;
 }
 
@@ -95,6 +96,15 @@ function TradeCard({ s, type }: { s: SignalItem; type: "buy" | "sell" | "watch" 
 
   return (
     <div className={`border rounded-2xl p-5 shadow-card ${borderStyle}`}>
+      {s.eu_tradeable === false && s.ucits_alternative && (
+        <div className="mb-3 bg-warn-bg border border-warn-light rounded-xl p-3 text-xs">
+          <span className="font-bold text-warn">Nicht EU-kaufbar</span>
+          <span className="text-ink-secondary"> — {s.symbol} ist ein US-ETF. UCITS-Alternative: </span>
+          <a href={`https://finance.yahoo.com/quote/${s.ucits_alternative.ucits}`} target="_blank" rel="noopener noreferrer"
+            className="font-bold text-accent hover:text-accent-hover">{s.ucits_alternative.ucits}</a>
+          <span className="text-ink-secondary"> ({s.ucits_alternative.name})</span>
+        </div>
+      )}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
           <a href={`https://finance.yahoo.com/quote/${s.symbol}`} target="_blank" rel="noopener noreferrer" className="text-xl font-bold text-ink hover:text-accent transition-colors">{s.symbol}</a>
@@ -444,6 +454,11 @@ export function Dashboard() {
                   <tr key={s.symbol} className="border-b border-border/50 hover:bg-surface-muted transition-colors">
                     <td className="py-2.5 px-4">
                       <a href={`https://finance.yahoo.com/quote/${s.symbol}`} target="_blank" rel="noopener noreferrer" className="font-bold text-ink hover:text-accent transition-colors">{s.symbol}</a>
+                      {s.eu_tradeable === false && s.ucits_alternative && (
+                        <span className="ml-1.5 text-[10px] text-warn" title={`Nicht EU-kaufbar. UCITS: ${s.ucits_alternative.ucits}`}>
+                          ⚠ → {s.ucits_alternative.ucits}
+                        </span>
+                      )}
                       {s.name && <span className="text-ink-tertiary text-xs ml-1.5 hidden lg:inline">{s.name}</span>}
                     </td>
                     <td className="py-2.5 px-2 text-center"><SignalBadge type={s.signal_type} /></td>
