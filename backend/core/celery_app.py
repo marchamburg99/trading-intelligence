@@ -55,6 +55,10 @@ app.conf.beat_schedule = {
         "task": "discovery.tasks.run_discovery",
         "schedule": crontab(minute=0, hour=5),  # täglich 05:00 UTC
     },
+    "check-portfolio": {
+        "task": "portfolio.tasks.check_portfolio",
+        "schedule": 900.0,  # alle 15 Min (parallel zu Signal-Update)
+    },
 }
 
 app.autodiscover_tasks([
@@ -66,4 +70,5 @@ app.autodiscover_tasks([
     "papers",
     "backtest",
     "discovery",
+    "portfolio",
 ])

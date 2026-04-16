@@ -100,16 +100,25 @@ export const api = {
   dashboard: {
     overview: () => fetchJSON("/dashboard/overview"),
   },
-  portfolioCheck: {
-    check: (positions: { symbol: string; shares: number; entry_price: number }[]) =>
-      postJSON("/portfolio-check/check", { positions }),
+  portfolio: {
+    overview: () => fetchJSON("/portfolio/"),
+    listHoldings: () => fetchJSON("/portfolio/holdings"),
+    addHolding: (data: { symbol: string; shares: number; entry_price: number; notes?: string }) =>
+      postJSON("/portfolio/holdings", data),
+    updateHolding: (id: number, data: { shares?: number; entry_price?: number; notes?: string }) =>
+      putJSON(`/portfolio/holdings/${id}`, data),
+    deleteHolding: (id: number) => deleteJSON(`/portfolio/holdings/${id}`),
+    bulkReplace: (positions: { symbol: string; shares: number; entry_price: number }[]) =>
+      postJSON("/portfolio/holdings/bulk", { positions }),
     uploadCsv: async (file: File) => {
       const form = new FormData();
       form.append("file", file);
-      const res = await fetch("/api/portfolio-check/check/csv", { method: "POST", body: form });
+      const res = await fetch("/api/portfolio/holdings/csv", { method: "POST", body: form });
       if (!res.ok) throw new Error(`API error: ${res.status}`);
       return res.json();
     },
+    alerts: () => fetchJSON("/portfolio/alerts"),
+    clearAlerts: () => deleteJSON("/portfolio/alerts"),
   },
   discovery: {
     suggestions: (params?: string) => fetchJSON(`/discovery/suggestions${params ? `?${params}` : ""}`),

@@ -43,6 +43,7 @@ interface DashboardData {
   movers: { gainers: { symbol: string; name: string; price: number; change: number }[]; losers: { symbol: string; name: string; price: number; change: number }[] };
   discovery: { symbol: string; name: string | null; score: number; source: string; reason: string; fund_count: number | null; price: number | null; rsi: number | null }[];
   top_watchlist: { symbol: string; name: string; signal_type: SignalType; confidence: number; currency?: string; currency_symbol?: string; entry_price: number; stop_loss: number; take_profit: number; entry_eur?: number | null; sl_eur?: number | null; tp_eur?: number | null; reasoning: string }[];
+  portfolio?: { total_positions: number; total_value: number; total_pnl: number; total_pnl_pct: number; action_summary: Record<string, number>; critical: { symbol: string; action: string; current_price: number | null; unrealized_pct: number | null; currency_symbol?: string; reason: string }[] } | null;
 }
 
 const AMPEL = {
@@ -317,6 +318,70 @@ export function Dashboard() {
 
       {/* === OFFENE POSITIONEN === */}
       <OpenPositions positions={data.positions.open} unrealized_total={data.positions.unrealized_total} realized_total={data.positions.realized_total} win_rate={data.positions.win_rate} />
+
+      {/* === PORTFOLIO-SUMMARY === */}
+      {data.portfolio && data.portfolio.total_positions > 0 && (
+        <div className="card">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="section-label">Mein Portfolio — {data.portfolio.total_positions} Positionen</h2>
+            <a href="/portfolio" className="text-[11px] font-medium text-accent hover:text-accent-hover">
+              Details &rarr;
+            </a>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+            <div className="text-center">
+              <div className="text-[10px] text-ink-tertiary uppercase tracking-wider">Gesamtwert</div>
+              <div className="text-xl font-bold text-ink">${data.portfolio.total_value.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-[10px] text-ink-tertiary uppercase tracking-wider">P&L</div>
+              <div className={`text-xl font-bold ${data.portfolio.total_pnl >= 0 ? "text-gain" : "text-loss"}`}>
+                {data.portfolio.total_pnl >= 0 ? "+" : ""}${data.portfolio.total_pnl.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="text-[10px] text-ink-tertiary uppercase tracking-wider">P&L %</div>
+              <div className={`text-xl font-bold ${data.portfolio.total_pnl_pct >= 0 ? "text-gain" : "text-loss"}`}>
+                {data.portfolio.total_pnl_pct >= 0 ? "+" : ""}{data.portfolio.total_pnl_pct.toFixed(1)}%
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="text-[10px] text-ink-tertiary uppercase tracking-wider">Kritisch</div>
+              <div className={`text-xl font-bold ${data.portfolio.critical.length > 0 ? "text-loss" : "text-ink"}`}>
+                {data.portfolio.critical.length}
+              </div>
+            </div>
+          </div>
+          {data.portfolio.critical.length > 0 && (
+            <div className="border-t border-border pt-3 space-y-1.5">
+              <div className="text-[10px] uppercase tracking-wider text-ink-tertiary">Handlungsbedarf</div>
+              {data.portfolio.critical.slice(0, 5).map((p) => (
+                <div key={p.symbol} className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2">
+                    <a href={`https://finance.yahoo.com/quote/${p.symbol}`} target="_blank" rel="noopener noreferrer"
+                      className="font-bold text-ink hover:text-accent">{p.symbol}</a>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                      p.action === "STOP_LOSS" || p.action === "SOFORT_VERKAUFEN" ? "bg-loss-bg text-loss" :
+                      p.action === "VERKAUFEN" ? "bg-loss-bg/50 text-loss" :
+                      p.action === "AUFSTOCKEN" ? "bg-gain-bg text-gain" : "bg-warn-bg text-warn"
+                    }`}>{p.action}</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs">
+                    {p.current_price != null && (
+                      <span className="font-mono text-ink-secondary">{p.currency_symbol || "$"}{p.current_price.toFixed(2)}</span>
+                    )}
+                    {p.unrealized_pct != null && (
+                      <span className={`font-mono font-semibold ${p.unrealized_pct >= 0 ? "text-gain" : "text-loss"}`}>
+                        {p.unrealized_pct >= 0 ? "+" : ""}{p.unrealized_pct.toFixed(1)}%
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* === DISCOVERY TEASER === */}
       {data.discovery && data.discovery.length > 0 && (

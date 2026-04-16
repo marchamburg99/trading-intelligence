@@ -271,6 +271,20 @@ class PortfolioSettings(Base):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
 
+class PortfolioHolding(Base):
+    __tablename__ = "portfolio_holdings"
+
+    id = Column(Integer, primary_key=True)
+    symbol = Column(String(20), nullable=False, index=True)
+    shares = Column(Numeric(14, 4), nullable=False)
+    entry_price = Column(Numeric(12, 4), nullable=False)
+    notes = Column(Text)
+    last_action = Column(String(30))
+    last_check_at = Column(DateTime)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
 class DiscoverySuggestion(Base):
     __tablename__ = "discovery_suggestions"
 

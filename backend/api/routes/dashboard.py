@@ -513,6 +513,50 @@ def trading_desk(db: Session = Depends(get_db)):
     if vix_val > 25 and lev_buys:
         briefing_points.append(f"🚫 VIX > 25 — Hebelprodukte NICHT empfohlen bei erhöhter Vola")
 
+    # === PORTFOLIO (persistente Positionen) ===
+    from core.models import PortfolioHolding
+    portfolio_holdings = db.query(PortfolioHolding).all()
+    portfolio_summary = None
+    if portfolio_holdings:
+        try:
+            from api.routes.portfolio import analyze_all_holdings
+            portfolio_data = analyze_all_holdings(db)
+            critical = [
+                p for p in portfolio_data["positions"]
+                if p.get("action") in ("STOP_LOSS", "SOFORT_VERKAUFEN", "VERKAUFEN", "AUFSTOCKEN")
+            ]
+            portfolio_summary = {
+                "total_positions": portfolio_data["total_positions"],
+                "total_value": portfolio_data["total_value"],
+                "total_pnl": portfolio_data["total_pnl"],
+                "total_pnl_pct": portfolio_data["total_pnl_pct"],
+                "action_summary": portfolio_data["action_summary"],
+                "critical": [
+                    {
+                        "symbol": p["symbol"],
+                        "action": p["action"],
+                        "current_price": p.get("current_price"),
+                        "unrealized_pct": p.get("unrealized_pct"),
+                        "currency_symbol": p.get("currency_symbol"),
+                        "reason": p.get("reason"),
+                    }
+                    for p in critical[:10]
+                ],
+            }
+            # Portfolio-Alerts aus Redis ins Briefing
+            import redis as _redis_mod, json as _json_mod
+            _pf_redis = _redis_mod.from_url(settings.redis_url)
+            pf_alerts_raw = _pf_redis.get("portfolio_alerts")
+            if pf_alerts_raw:
+                pf_alerts = _json_mod.loads(pf_alerts_raw)
+                for a in pf_alerts[-3:]:
+                    emoji = "🚨" if a["to"] == "STOP_LOSS" else "🔴" if "VERKAUFEN" in a["to"] else "🟢"
+                    briefing_points.append(
+                        f"{emoji} Portfolio: {a['symbol']} -> {a['to']} ({a.get('unrealized_pct', 0):+.1f}%)"
+                    )
+        except Exception:
+            pass
+
     # === TOP WATCHLIST (konfidenteste Signale) ===
     top_signals = (
         db.query(Signal).join(Ticker)
@@ -567,6 +611,7 @@ def trading_desk(db: Session = Depends(get_db)):
             "gainers": sorted([m for m in movers if m["change"] > 0], key=lambda x: x["change"], reverse=True)[:5],
             "losers": sorted([m for m in movers if m["change"] < 0], key=lambda x: x["change"])[:5],
         },
+        "portfolio": portfolio_summary,
         "top_watchlist": [_serialize_top_signal(s, _fx) for s in top_signals],
         "discovery": [
             {

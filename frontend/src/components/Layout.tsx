@@ -10,7 +10,7 @@ import {
   BookOpen,
   Shield,
   Sparkles,
-  ClipboardCheck,
+  Briefcase,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -22,7 +22,7 @@ const NAV_ITEMS = [
   { to: "/macro", label: "Makro", icon: TrendingUp },
   { to: "/watchlist", label: "Watchlist", icon: Star },
   { to: "/journal", label: "Journal", icon: BookOpen },
-  { to: "/portfolio-check", label: "Portfolio-Check", icon: ClipboardCheck },
+  { to: "/portfolio", label: "Mein Portfolio", icon: Briefcase },
   { to: "/risk", label: "Risiko", icon: Shield },
   { to: "/ai", label: "KI-Analyse", icon: Sparkles },
 ];
