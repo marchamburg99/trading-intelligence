@@ -203,11 +203,20 @@ def main():
     cur = conn.cursor()
 
     # Symbole bestimmen
-    if len(sys.argv) > 1:
-        symbols = [s.upper() for s in sys.argv[1:]]
+    refresh_all = "--all" in sys.argv
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+
+    if args:
+        symbols = [s.upper() for s in args]
         print(f"Fetche {len(symbols)} spezifische Ticker...")
+    elif refresh_all:
+        cur.execute("""
+            SELECT t.symbol FROM tickers t JOIN watchlist w ON w.ticker_id = t.id ORDER BY t.symbol
+        """)
+        symbols = [r[0] for r in cur.fetchall()]
+        print(f"Refresh aller {len(symbols)} Watchlist-Ticker...")
     else:
-        # Alle Watchlist-Ticker ohne (aktuelle) OHLCV-Daten
+        # Alle Ticker ohne aktuelle Daten (aelter als heute)
         cur.execute("""
             SELECT t.symbol
             FROM tickers t
@@ -215,11 +224,11 @@ def main():
             LEFT JOIN LATERAL (
                 SELECT MAX(date) AS max_date FROM ohlcv_data WHERE ticker_id = t.id
             ) o ON true
-            WHERE o.max_date IS NULL OR o.max_date < CURRENT_DATE - INTERVAL '3 days'
+            WHERE o.max_date IS NULL OR o.max_date < CURRENT_DATE
             ORDER BY t.symbol
         """)
         symbols = [r[0] for r in cur.fetchall()]
-        print(f"Fetche {len(symbols)} Watchlist-Ticker ohne aktuelle Daten...")
+        print(f"Fetche {len(symbols)} Watchlist-Ticker ohne heutige Daten...")
 
     if not symbols:
         print("Nichts zu tun.")

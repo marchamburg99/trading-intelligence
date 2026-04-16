@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.trading.fetch</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/python3</string>
+        <string>/Users/marc/development/trading/scripts/fetch_missing_ohlcv.py</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/marc/development/trading</string>
+
+    <!-- Alle 15 Minuten (900 Sekunden) -->
+    <key>StartInterval</key>
+    <integer>900</integer>
+
+    <!-- Sofort beim Laden ausfuehren -->
+    <key>RunAtLoad</key>
+    <true/>
+
+    <!-- Logs -->
+    <key>StandardOutPath</key>
+    <string>/Users/marc/development/trading/scripts/fetch.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/marc/development/trading/scripts/fetch.error.log</string>
+
+    <!-- Nur laufen wenn Mac aktiv ist (keine Sleep-Weckung) -->
+    <key>LaunchOnlyOnce</key>
+    <false/>
+</dict>
+</plist>
