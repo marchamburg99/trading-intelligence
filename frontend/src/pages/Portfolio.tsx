@@ -30,6 +30,7 @@ interface Position {
   reasoning?: string;
   eu_tradeable?: boolean;
   ucits_alternative?: { ucits: string; name: string } | null;
+  trade_republic?: { url: string; type: string; isin: string | null; symbol: string };
 }
 
 interface PortfolioData {
@@ -98,6 +99,13 @@ function PositionRow({ p, expanded, onToggle, onDelete, onEdit }: {
         </td>
         <td className="py-3 px-2 text-center"><ActionBadge action={p.action} /></td>
         <td className="py-3 px-2 text-center">
+          {p.trade_republic && (
+            <a href={p.trade_republic.url} target="_blank" rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="text-[11px] font-semibold text-accent hover:text-accent-hover whitespace-nowrap px-1">
+              TR →
+            </a>
+          )}
           <button onClick={(e) => { e.stopPropagation(); onEdit(p); }} className="text-ink-faint hover:text-accent text-xs px-1">bearbeiten</button>
           <button onClick={(e) => { e.stopPropagation(); if (confirm(`${p.symbol} entfernen?`)) onDelete(p.id); }}
             className="text-ink-faint hover:text-loss text-xs px-1">x</button>

@@ -16,7 +16,7 @@ from core.models import (
 from core.products import (
     LEVERAGED_PRODUCTS, CRYPTO_ETFS, COMMODITY_ETFS, ALL_SPECIAL_SYMBOLS,
     is_leveraged, get_leverage, get_product_info,
-    is_eu_tradeable, get_ucits_alternative,
+    is_eu_tradeable, get_ucits_alternative, get_trade_republic_url,
 )
 
 
@@ -56,6 +56,7 @@ def _serialize_top_signal(s, fx_rates):
         "reasoning": s.reasoning,
         "eu_tradeable": is_eu_tradeable(sym),
         "ucits_alternative": get_ucits_alternative(sym),
+        "trade_republic": get_trade_republic_url(sym),
     }
 
 
@@ -139,6 +140,7 @@ def _serialize_signal(s, capital=100000.0, fx_rates=None):
 
     result["eu_tradeable"] = is_eu_tradeable(symbol)
     result["ucits_alternative"] = get_ucits_alternative(symbol)
+    result["trade_republic"] = get_trade_republic_url(symbol)
 
     return result
 

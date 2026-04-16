@@ -81,3 +81,86 @@ Fetche 78 Watchlist-Ticker ohne heutige Daten...
   XLY          OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 118.18
 
 77/78 erfolgreich
+Hinweis: pandas-ta nicht verfuegbar — Indikatoren werden vom Docker-Task berechnet
+
+Fetche 78 Watchlist-Ticker ohne heutige Daten...
+  AAPL         OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 266.43
+  ABBV         OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 208.42
+  AMD          OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 258.12
+  AMZN         OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 248.50
+  ASML         OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 1481.77
+  AVGO         OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 396.72
+  BOIL         OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 13.15
+  COPX         OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 86.08
+  COST         OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 984.75
+  CRM          OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 177.60
+  DBA          OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 27.17
+  DIA          OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 484.72
+  EEM          OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 62.20
+  EFA          OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 103.31
+  ETHA         OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 17.97
+  FAS          OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 138.72
+  FAZ          OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 42.94
+  GLD          OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 440.46
+  GOOGL        OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 337.12
+  HD           OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 338.91
+  HYG          OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 80.46
+  IBIT         OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 42.56
+  INTC         OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 64.94
+  IWM          OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 269.39
+  JNJ          OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 238.67
+  JNUG         OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 230.43
+  JPM          OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 305.93
+  KO           OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 75.31
+  KOLD         OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 26.13
+  LABU         OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 201.10
+  LLY          OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 905.03
+  LQD          OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 109.94
+  META         OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 671.58
+  MRK          OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 117.90
+  MSFT         OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 411.22
+  NFLX         OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 107.71
+  NUGT         OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 212.47
+  NVDA         OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 198.87
+  PEP          OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 154.85
+  PG           OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 143.38
+  QQQ          OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 637.40
+  ROG.SW       OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 317.00
+  SLV          OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 71.84
+  SOXL         OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 85.96
+  SOXS         OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 20.94
+  SPXL         OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 229.00
+  SPXS         OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 32.43
+  SPY          OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 699.94
+  SQQQ         OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 59.44
+  SVXY         OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 50.12
+  SXRV         FEHLER: HTTP Error 404: Not Found
+  TLT          OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 86.83
+  TNA          OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 56.20
+  TQQQ         OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 55.65
+  TSLA         OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 391.95
+  TZA          OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 5.46
+  UNG          OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 10.58
+  UNH          OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 314.05
+  UPRO         OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 120.06
+  USO          OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 122.59
+  UVXY         OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 38.95
+  V            OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 315.91
+  VGK          OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 88.03
+  VOO          OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 643.45
+  VTI          OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 345.24
+  VXX          OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 29.33
+  WMT          OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 124.76
+  XLB          OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 51.38
+  XLC          OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 117.36
+  XLE          OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 55.76
+  XLF          OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 52.17
+  XLI          OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 171.18
+  XLK          OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 150.30
+  XLP          OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 81.06
+  XLRE         OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 43.41
+  XLU          OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 46.02
+  XLV          OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 147.77
+  XLY          OK — 0 OHLCV + 0 Indikatoren, letzter Kurs: 118.18
+
+77/78 erfolgreich

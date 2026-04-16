@@ -18,6 +18,7 @@ interface SignalItem {
   currency?: string; currency_symbol?: string;
   entry_eur?: number | null; sl_eur?: number | null; tp_eur?: number | null;
   eu_tradeable?: boolean; ucits_alternative?: { ucits: string; name: string } | null;
+  trade_republic?: { url: string; type: string; isin: string | null; symbol: string };
 }
 
 interface Position {
@@ -43,7 +44,7 @@ interface DashboardData {
   sectors: { symbol: string; name: string; change_1d: number; change_20d: number }[];
   movers: { gainers: { symbol: string; name: string; price: number; change: number }[]; losers: { symbol: string; name: string; price: number; change: number }[] };
   discovery: { symbol: string; name: string | null; score: number; source: string; reason: string; fund_count: number | null; price: number | null; rsi: number | null }[];
-  top_watchlist: { symbol: string; name: string; signal_type: SignalType; confidence: number; currency?: string; currency_symbol?: string; entry_price: number; stop_loss: number; take_profit: number; entry_eur?: number | null; sl_eur?: number | null; tp_eur?: number | null; reasoning: string; eu_tradeable?: boolean; ucits_alternative?: { ucits: string; name: string } | null }[];
+  top_watchlist: { symbol: string; name: string; signal_type: SignalType; confidence: number; currency?: string; currency_symbol?: string; entry_price: number; stop_loss: number; take_profit: number; entry_eur?: number | null; sl_eur?: number | null; tp_eur?: number | null; reasoning: string; eu_tradeable?: boolean; ucits_alternative?: { ucits: string; name: string } | null; trade_republic?: { url: string; type: string; isin: string | null; symbol: string } }[];
   portfolio?: { total_positions: number; total_value: number; total_pnl: number; total_pnl_pct: number; action_summary: Record<string, number>; critical: { symbol: string; action: string; current_price: number | null; unrealized_pct: number | null; currency_symbol?: string; reason: string }[] } | null;
 }
 
@@ -97,12 +98,19 @@ function TradeCard({ s, type }: { s: SignalItem; type: "buy" | "sell" | "watch" 
   return (
     <div className={`border rounded-2xl p-5 shadow-card ${borderStyle}`}>
       {s.eu_tradeable === false && s.ucits_alternative && (
-        <div className="mb-3 bg-warn-bg border border-warn-light rounded-xl p-3 text-xs">
-          <span className="font-bold text-warn">Nicht EU-kaufbar</span>
-          <span className="text-ink-secondary"> — {s.symbol} ist ein US-ETF. UCITS-Alternative: </span>
-          <a href={`https://finance.yahoo.com/quote/${s.ucits_alternative.ucits}`} target="_blank" rel="noopener noreferrer"
-            className="font-bold text-accent hover:text-accent-hover">{s.ucits_alternative.ucits}</a>
-          <span className="text-ink-secondary"> ({s.ucits_alternative.name})</span>
+        <div className="mb-3 bg-warn-bg border border-warn-light rounded-xl p-3 text-xs flex items-center justify-between gap-3">
+          <div className="flex-1">
+            <span className="font-bold text-warn">Nicht EU-kaufbar</span>
+            <span className="text-ink-secondary"> — UCITS-Alternative: </span>
+            <b className="text-ink">{s.ucits_alternative.ucits}</b>
+            <span className="text-ink-secondary"> ({s.ucits_alternative.name})</span>
+          </div>
+          {s.trade_republic && (
+            <a href={s.trade_republic.url} target="_blank" rel="noopener noreferrer"
+              className="shrink-0 bg-ink text-white hover:bg-accent font-semibold text-xs px-3 py-1.5 rounded-lg transition-colors">
+              Bei TR kaufen →
+            </a>
+          )}
         </div>
       )}
       <div className="flex items-center justify-between mb-3">
@@ -180,6 +188,12 @@ function TradeCard({ s, type }: { s: SignalItem; type: "buy" | "sell" | "watch" 
           <div className="flex gap-3">
             <a href={`/watchlist?symbol=${s.symbol}`} className="text-[10px] text-ink-tertiary hover:text-accent">Chart</a>
             <a href={`/risk?entry_price=${s.entry_price}&stop_loss=${s.stop_loss}&take_profit=${s.take_profit}`} className="text-[10px] text-ink-tertiary hover:text-accent">Risiko berechnen</a>
+            {s.trade_republic && (
+              <a href={s.trade_republic.url} target="_blank" rel="noopener noreferrer"
+                className="text-[10px] text-accent hover:text-accent-hover font-semibold">
+                Trade Republic →
+              </a>
+            )}
           </div>
           <button onClick={handleOpenExec}
             className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all active:scale-[0.98] ${
@@ -447,6 +461,7 @@ export function Dashboard() {
                   <th className="py-2.5 px-2 text-right hidden md:table-cell">Stop-Loss</th>
                   <th className="py-2.5 px-2 text-right hidden md:table-cell">Take-Profit</th>
                   <th className="py-2.5 px-2 text-left hidden lg:table-cell">Begründung</th>
+                  <th className="py-2.5 px-2 text-center">Kaufen</th>
                 </tr>
               </thead>
               <tbody>
@@ -471,6 +486,14 @@ export function Dashboard() {
                     <td className="py-2.5 px-2 text-right font-mono text-loss hidden md:table-cell"><Price value={s.stop_loss} currency={s.currency} currencySymbol={s.currency_symbol} eurValue={s.sl_eur} className="text-loss" /></td>
                     <td className="py-2.5 px-2 text-right font-mono text-gain hidden md:table-cell"><Price value={s.take_profit} currency={s.currency} currencySymbol={s.currency_symbol} eurValue={s.tp_eur} className="text-gain" /></td>
                     <td className="py-2.5 px-2 text-ink-secondary text-xs hidden lg:table-cell max-w-xs truncate">{s.reasoning}</td>
+                    <td className="py-2.5 px-2 text-center">
+                      {s.trade_republic && (
+                        <a href={s.trade_republic.url} target="_blank" rel="noopener noreferrer"
+                          className="text-[11px] font-semibold text-accent hover:text-accent-hover whitespace-nowrap">
+                          TR →
+                        </a>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
