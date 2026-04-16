@@ -135,8 +135,14 @@ export function PortfolioCheck() {
           .map((line) => line.trim())
           .filter((l) => l && !l.startsWith("#"))
           .map((line) => {
-            const parts = line.replace(/,/g, " ").replace(/\t/g, " ").split(/\s+/);
-            return { symbol: parts[0].toUpperCase(), shares: parseFloat(parts[1]) || 0, entry_price: parseFloat(parts[2]) || 0 };
+            // Whitespace oder Tab als Separator. Komma als Dezimaltrennzeichen (DE-Format) akzeptieren.
+            const parts = line.replace(/\t/g, " ").split(/\s+/);
+            const parseNum = (s: string) => parseFloat((s || "").replace(/\./g, "").replace(",", "."));
+            return {
+              symbol: parts[0].toUpperCase(),
+              shares: parseNum(parts[1]) || 0,
+              entry_price: parseNum(parts[2]) || 0,
+            };
           })
           .filter((p) => p.shares > 0);
       } else if (mode === "manual") {

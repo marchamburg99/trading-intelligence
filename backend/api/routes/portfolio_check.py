@@ -42,10 +42,30 @@ def _analyze_position(pos: PortfolioPosition, db: Session, capital: float) -> di
 
     # Ticker + aktueller Kurs aus DB
     ticker = db.query(Ticker).filter(Ticker.symbol == symbol).first()
+
+    # Fallback: unbekannten Ticker automatisch via yfinance anlegen + OHLCV laden
     if not ticker:
-        result["status"] = "UNKNOWN"
-        result["action"] = "NICHT_ANALYSIERBAR"
-        result["reason"] = f"{symbol} nicht in der Datenbank. Zur Watchlist hinzufuegen fuer Analyse."
+        try:
+            from aggregator.fetcher import fetch_and_store_ohlcv, compute_indicators
+            if fetch_and_store_ohlcv(symbol, db, period="1y"):
+                compute_indicators(symbol, db)
+                ticker = db.query(Ticker).filter(Ticker.symbol == symbol).first()
+        except Exception:
+            pass
+
+    if not ticker:
+        # Minimal-Analyse ohne Kursdaten: nur Konzentrations-Check
+        pos_val = pos.shares * pos.entry_price
+        concentration = (pos_val / capital * 100) if capital > 0 else 0
+        result["current_value"] = pos_val
+        result["concentration"] = round(concentration, 1)
+        result["status"] = "NO_DATA"
+        if concentration > 25:
+            result["action"] = "REDUZIEREN"
+            result["reason"] = f"{symbol}: Keine Kursdaten, aber {concentration:.0f}% Konzentration — zu gross, Position verkleinern."
+        else:
+            result["action"] = "BEOBACHTEN"
+            result["reason"] = f"{symbol}: Keine Kursdaten verfuegbar (yfinance blockiert). Zur Watchlist hinzufuegen fuer Analyse."
         return result
 
     result["name"] = ticker.name
@@ -79,10 +99,18 @@ def _analyze_position(pos: PortfolioPosition, db: Session, capital: float) -> di
         .first()
     )
 
+    # Kein aktives Signal: on-the-fly generieren
+    if not signal:
+        try:
+            from signals.engine import generate_signal
+            signal = generate_signal(symbol, db, capital)
+        except Exception:
+            signal = None
+
     if not signal:
         result["status"] = "NO_SIGNAL"
         result["action"] = "BEOBACHTEN"
-        result["reason"] = f"Kein aktives Signal fuer {symbol}. Zur Watchlist hinzufuegen."
+        result["reason"] = f"Kein Signal fuer {symbol} berechenbar (zu wenig Daten)."
         result["confidence"] = None
         result["signal_type"] = None
         return result
