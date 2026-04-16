@@ -130,7 +130,7 @@ def _fetch_from_yfinance(symbol: str, period: str, db: Session) -> bool:
 
 
 def fetch_and_store_ohlcv(symbol: str, db: Session, period: str = "1y") -> bool:
-    """Lade OHLCV-Daten. Twelve Data primaer, yfinance als Fallback."""
+    """Lade OHLCV-Daten. Provider-Kette: Twelve Data -> yfinance."""
     if twelvedata.is_available():
         try:
             if _fetch_from_twelvedata(symbol, period, db):
@@ -139,10 +139,14 @@ def fetch_and_store_ohlcv(symbol: str, db: Session, period: str = "1y") -> bool:
         except Exception as e:
             logger.warning("twelvedata_fetch_failed", symbol=symbol, error=str(e))
 
-    result = _fetch_from_yfinance(symbol, period, db)
-    if result:
-        logger.info("ohlcv.fetched", symbol=symbol, source="yfinance")
-    return result
+    try:
+        if _fetch_from_yfinance(symbol, period, db):
+            logger.info("ohlcv.fetched", symbol=symbol, source="yfinance")
+            return True
+    except Exception as e:
+        logger.warning("yfinance_fetch_failed", symbol=symbol, error=str(e))
+
+    return False
 
 
 def compute_indicators(symbol: str, db: Session) -> bool:

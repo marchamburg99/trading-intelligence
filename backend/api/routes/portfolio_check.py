@@ -7,7 +7,7 @@ from sqlalchemy import desc
 from pydantic import BaseModel
 
 from core.database import get_db
-from core.models import Ticker, Signal, Indicator, OHLCVData
+from core.models import Ticker, Signal, Indicator, OHLCVData, Watchlist
 from core.portfolio import get_current_capital
 from core.products import is_leveraged, get_product_info
 from aggregator.currency import get_ticker_currency, get_currency_symbol
@@ -54,7 +54,20 @@ def _analyze_position(pos: PortfolioPosition, db: Session, capital: float) -> di
             pass
 
     if not ticker:
-        # Minimal-Analyse ohne Kursdaten: nur Konzentrations-Check
+        # Ticker + Watchlist-Eintrag anlegen damit naechster Celery-Task sie laedt
+        try:
+            ticker = Ticker(symbol=symbol, name=symbol)
+            db.add(ticker)
+            db.flush()
+            # Zur Watchlist hinzufuegen damit aggregator.tasks.fetch_watchlist_data sie findet
+            existing_wl = db.query(Watchlist).filter(Watchlist.ticker_id == ticker.id).first()
+            if not existing_wl:
+                db.add(Watchlist(ticker_id=ticker.id, notes="Auto via Portfolio-Check"))
+            db.commit()
+        except Exception:
+            db.rollback()
+
+        # Minimal-Analyse ohne Kursdaten
         pos_val = pos.shares * pos.entry_price
         concentration = (pos_val / capital * 100) if capital > 0 else 0
         result["current_value"] = pos_val
@@ -62,10 +75,10 @@ def _analyze_position(pos: PortfolioPosition, db: Session, capital: float) -> di
         result["status"] = "NO_DATA"
         if concentration > 25:
             result["action"] = "REDUZIEREN"
-            result["reason"] = f"{symbol}: Keine Kursdaten, aber {concentration:.0f}% Konzentration — zu gross, Position verkleinern."
+            result["reason"] = f"{symbol}: Keine Kursdaten, aber {concentration:.0f}% Konzentration — zu gross, Position verkleinern. Automatisch zur Watchlist hinzugefuegt."
         else:
             result["action"] = "BEOBACHTEN"
-            result["reason"] = f"{symbol}: Keine Kursdaten verfuegbar (yfinance blockiert). Zur Watchlist hinzufuegen fuer Analyse."
+            result["reason"] = f"{symbol}: Automatisch zur Watchlist hinzugefuegt — Daten beim naechsten Update-Zyklus (15 Min) verfuegbar."
         return result
 
     result["name"] = ticker.name
