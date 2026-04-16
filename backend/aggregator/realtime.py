@@ -112,6 +112,12 @@ def get_realtime_quote(symbol: str, priority: bool = False) -> dict | None:
     if priority:
         quote = get_realtime_quote_av(symbol)
 
+    # Twelve Data als primaeren Fallback (bevor yfinance)
+    if not quote:
+        from aggregator import twelvedata
+        if twelvedata.is_available():
+            quote = twelvedata.fetch_quote(symbol)
+
     if not quote:
         quote = get_realtime_quote_yf(symbol)
 

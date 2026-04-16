@@ -66,6 +66,26 @@ def get_exchange_rate(from_currency: str) -> float | None:
     if not pair:
         return None
 
+    # Twelve Data primaer (Forex ueber EUR/USD etc.)
+    try:
+        from aggregator import twelvedata
+        if twelvedata.is_available():
+            td_pair = f"EUR/{from_currency}"
+            import httpx
+            resp = httpx.get(
+                f"{twelvedata.BASE_URL}/price",
+                params={"symbol": td_pair, "apikey": settings.twelvedata_api_key},
+                timeout=10,
+            )
+            data = resp.json()
+            if "price" in data:
+                rate = float(data["price"])
+                if rate > 0:
+                    redis_client.setex(cache_key, CACHE_TTL, str(rate))
+                    return rate
+    except Exception as e:
+        logger.warning("twelvedata_fx_failed", pair=pair, error=str(e))
+
     try:
         ticker = yf_safe_ticker(pair)
         rate = ticker.fast_info.get("lastPrice")

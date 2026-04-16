@@ -11,6 +11,7 @@ class Settings(BaseSettings):
 
     # API Keys
     alpha_vantage_api_key: str = ""
+    twelvedata_api_key: str = ""
     newsapi_key: str = ""
     fred_api_key: str = ""
     anthropic_api_key: str = ""

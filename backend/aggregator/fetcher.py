@@ -3,6 +3,7 @@ import structlog
 import pandas as pd
 import pandas_ta as ta
 from aggregator.yf_session import yf_safe_ticker
+from aggregator import twelvedata
 from datetime import date, timedelta
 from sqlalchemy.orm import Session
 
@@ -22,10 +23,64 @@ def safe_float(val):
         return None
 
 
-def fetch_and_store_ohlcv(symbol: str, db: Session, period: str = "1y") -> bool:
-    """Lade OHLCV-Daten von Yahoo Finance und speichere in DB."""
-    ticker_obj = yf_safe_ticker(symbol)
-    hist = ticker_obj.history(period=period)
+def _period_to_days(period: str) -> int:
+    mapping = {"1mo": 30, "3mo": 90, "6mo": 180, "1y": 365, "2y": 730, "5y": 1825}
+    return mapping.get(period, 365)
+
+
+def _fetch_from_twelvedata(symbol: str, period: str, db: Session) -> bool:
+    """Primaer-Provider: Twelve Data."""
+    days = _period_to_days(period)
+    values = twelvedata.fetch_time_series(symbol, days=days)
+    if not values:
+        return False
+
+    ticker = db.query(Ticker).filter(Ticker.symbol == symbol).first()
+    if not ticker:
+        info = twelvedata.fetch_ticker_info(symbol)
+        ticker = Ticker(
+            symbol=symbol,
+            name=info.get("name") or symbol,
+            sector=info.get("sector"),
+            industry=info.get("industry"),
+            exchange=info.get("exchange"),
+            country=info.get("country"),
+        )
+        db.add(ticker)
+        db.flush()
+
+    for v in values:
+        existing = (
+            db.query(OHLCVData)
+            .filter(OHLCVData.ticker_id == ticker.id, OHLCVData.date == v["date"])
+            .first()
+        )
+        if existing:
+            continue
+        ohlcv = OHLCVData(
+            ticker_id=ticker.id,
+            date=v["date"],
+            open=v["open"],
+            high=v["high"],
+            low=v["low"],
+            close=v["close"],
+            adj_close=v["close"],
+            volume=v["volume"],
+        )
+        db.add(ohlcv)
+
+    db.commit()
+    return True
+
+
+def _fetch_from_yfinance(symbol: str, period: str, db: Session) -> bool:
+    """Fallback-Provider: yfinance."""
+    try:
+        ticker_obj = yf_safe_ticker(symbol)
+        hist = ticker_obj.history(period=period)
+    except Exception as e:
+        logger.warning("yfinance_history_failed", symbol=symbol, error=str(e))
+        return False
 
     if hist.empty:
         return False
@@ -34,8 +89,7 @@ def fetch_and_store_ohlcv(symbol: str, db: Session, period: str = "1y") -> bool:
     if not ticker:
         try:
             info = ticker_obj.info
-        except Exception as e:
-            logger.warning("ticker_info_fetch_failed", symbol=symbol, error=str(e))
+        except Exception:
             info = {}
         ticker = Ticker(
             symbol=symbol,
@@ -73,6 +127,22 @@ def fetch_and_store_ohlcv(symbol: str, db: Session, period: str = "1y") -> bool:
 
     db.commit()
     return True
+
+
+def fetch_and_store_ohlcv(symbol: str, db: Session, period: str = "1y") -> bool:
+    """Lade OHLCV-Daten. Twelve Data primaer, yfinance als Fallback."""
+    if twelvedata.is_available():
+        try:
+            if _fetch_from_twelvedata(symbol, period, db):
+                logger.info("ohlcv.fetched", symbol=symbol, source="twelvedata")
+                return True
+        except Exception as e:
+            logger.warning("twelvedata_fetch_failed", symbol=symbol, error=str(e))
+
+    result = _fetch_from_yfinance(symbol, period, db)
+    if result:
+        logger.info("ohlcv.fetched", symbol=symbol, source="yfinance")
+    return result
 
 
 def compute_indicators(symbol: str, db: Session) -> bool:
